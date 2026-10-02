@@ -1,0 +1,864 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 19 /Kids [7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R 23 0 R 25 0 R 27 0 R 29 0 R 31 0 R 33 0 R 35 0 R 37 0 R 39 0 R 41 0 R 43 0 R] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 3219 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Monitor Remote) Tj ET
+BT /F2 13 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 721.64 Tm (A developer's step-by-step build guide) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 690.39 Tm (Prepared 1 October 2026 from the current project source.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 665.39 Tm (This guide explains how to recreate and maintain the app as its developer. It presents a) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 650.39 Tm (reproducible implementation sequence reconstructed from the source and project records,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 635.39 Tm (rather than an exact transcript of every historical edit. Code samples marked as excerpts) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 620.39 Tm (come from the implementation; the source files contain the complete code.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 595.39 Tm (The finished product lets iPhone Safari control external monitor brightness and request) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 580.39 Tm (all Windows displays off or awake over a trusted local network. A portable Windows) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 565.39 Tm (launcher starts the server, shows the phone URL and QR code, manages pairing, and stays in) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 550.39 Tm (the tray.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 525.39 Tm (No cloud service, database, frontend framework, or iPhone native app is required. The PC) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 510.39 Tm (must remain running and awake. Display off is separate from shutting down the PC, and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 495.39 Tm (display wake cannot wake a sleeping PC.) Tj ET
+BT /F2 13 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 465.39 Tm (Reading order) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 434.14 Tm (1. Define the behavior and architecture.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 416.14 Tm (2. Create the server project and static web interface.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 398.14 Tm (3. Implement native monitor control and isolate it in workers.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 380.14 Tm (4. Add pairing, sessions, API protection, and endpoints.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 362.14 Tm (5. Make the phone interface resilient to rapid input and network loss.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 344.14 Tm (6. Add the Windows launcher and authenticated local management.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 326.14 Tm (7. Add tray behavior, preferences, startup, QR code, and icon.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 308.14 Tm (8. Test, publish, distribute, and maintain the project.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (1) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 4886 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 1 - Define the system) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (Start with two distinct controls: brightness for an individually enumerated physical) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (monitor, and off/wake for all displays. Brightness uses Windows' monitor configuration) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 689.64 Tm (APIs and depends on the monitor and connection supporting DDC/CI. Power uses Windows) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 674.64 Tm (display control APIs and does not claim a verified physical power state.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 649.64 Tm (Choose ASP.NET Core Minimal APIs for the local HTTP service, plain HTML/CSS/JavaScript for) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 634.64 Tm (Safari, and Windows Forms for a convenient desktop launcher. Keep native calls out of the) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 619.64 Tm (web request process by spawning the server executable in worker mode.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 594.64 Tm (Architecture:) Tj ET
+0.94 0.96 0.97 rg 43 559.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 562.64 Tm (iPhone Safari) Tj ET
+0.94 0.96 0.97 rg 43 544.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 547.64 Tm (  | HTTP, session cookie, JSON, LAN port 8765) Tj ET
+0.94 0.96 0.97 rg 43 529.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 532.64 Tm (  v) Tj ET
+0.94 0.96 0.97 rg 43 514.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 517.64 Tm (ASP.NET Core server -> short-lived --worker process) Tj ET
+0.94 0.96 0.97 rg 43 499.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 502.64 Tm (  ^                         | Win32 interop) Tj ET
+0.94 0.96 0.97 rg 43 484.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 487.64 Tm (  | local named pipe        v) Tj ET
+0.94 0.96 0.97 rg 43 469.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 472.64 Tm (Windows Forms launcher   Windows / physical monitors) Tj ET
+0.94 0.96 0.97 rg 43 454.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 457.64 Tm (  |) Tj ET
+0.94 0.96 0.97 rg 43 439.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 442.64 Tm (  + owns server and children through a Windows job) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 413.64 Tm (A typical brightness request goes through these stages: Safari submits a percentage; the) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 398.64 Tm (server validates the session and input; a semaphore serializes hardware access; a worker) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 383.64 Tm (enumerates monitors, maps the percentage into the native range, sets brightness, and reads) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 368.64 Tm (it back; the server returns JSON; the interface reports the confirmed or unconfirmed) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 353.64 Tm (result.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 328.64 Tm (Implementation map:) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 303.64 Tm (- Program.cs: HTTP hosting, request protection, routes, worker orchestration.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 285.64 Tm (- Hardware.cs: native enumeration, brightness, power, simulated hardware.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 267.64 Tm (- PairingState.cs: pairing code, rate limit, sessions, renewal/revocation.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 249.64 Tm (- LocalManagement.cs and ManagementProtocol.cs: local launcher/server protocol.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 231.64 Tm (- wwwroot/index.html, style.css, app.js: phone controller.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 213.64 Tm (- desktop/Program.cs and MainForm.cs: Windows entry point, window, tray, QR.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 195.64 Tm (- desktop/ServerController.cs and OwnedJob.cs: server lifecycle and ownership.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 177.64 Tm (- desktop/Preferences.cs: local settings and sign-in registration.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 159.64 Tm (- desktop/LauncherChecks.cs and tests/: automated checks.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 141.64 Tm (- package.ps1: portable distribution build.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (2) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 4008 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 2 - Set up the projects) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (Development prerequisites are Windows, the .NET 10 SDK, Node.js with built-in fetch) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (support for the checks, and PowerShell. A compatible external monitor with DDC/CI enabled) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 689.64 Tm (is needed for real hardware testing. The self-contained published app does not require its) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 674.64 Tm (user to install the SDK.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 649.64 Tm (To reproduce the initial scaffold in a new empty folder, use:) Tj ET
+0.94 0.96 0.97 rg 43 614.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 617.64 Tm (dotnet new web -n MonitorRemote -o . --framework net10.0) Tj ET
+0.94 0.96 0.97 rg 43 599.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 602.64 Tm (dotnet new winforms -n MonitorRemote.Desktop -o desktop --framework net10.0) Tj ET
+0.94 0.96 0.97 rg 43 584.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 587.64 Tm (dotnet add desktop/MonitorRemote.Desktop.csproj package QRCoder --version 1.8.0) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 558.64 Tm (These are reconstruction commands. Do not run project scaffolding over this existing) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 543.64 Tm (source tree. Remove or replace the template form when implementing MainForm. Use the) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 528.64 Tm (checked-in project files as the authority for the finished configuration.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 503.64 Tm (The server uses Microsoft.NET.Sdk.Web, net10.0, implicit usings, and nullable analysis.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 488.64 Tm (Since SDK projects include C# files recursively, its project file explicitly excludes) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 473.64 Tm (desktop/**/*.cs and generated/distribution directories. Otherwise the server would attempt) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 458.64 Tm (to compile the launcher too. App and docs are excluded from server content to prevent) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 443.64 Tm (publishing the portable package into itself.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 418.64 Tm (The launcher uses Microsoft.NET.Sdk with OutputType WinExe, net10.0-windows, and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 403.64 Tm (UseWindowsForms true. It references QRCoder 1.8.0, embeds its ICO resource, and links) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 388.64 Tm (../ManagementProtocol.cs so both processes use the same request/reply types.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 363.64 Tm (For the existing project, begin with:) Tj ET
+0.94 0.96 0.97 rg 43 328.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 331.64 Tm (dotnet build MonitorRemote.csproj) Tj ET
+0.94 0.96 0.97 rg 43 313.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 316.64 Tm (dotnet build desktop/MonitorRemote.Desktop.csproj) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 287.64 Tm (Restore is performed by the build as needed. The desktop dependency must be available from) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 272.64 Tm (NuGet or the local package cache. Keep the full source separate from App, which is a) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 257.64 Tm (ready-to-run distribution.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (3) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Length 4218 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 3 - Host the web interface and API) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (Program.cs first detects --worker and immediately delegates to Hardware.Run. Ordinary) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (startup creates the web application, reads MONITOR_PORT \(default 8765\), and binds HTTP to) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 689.64 Tm (0.0.0.0 so the phone can reach the PC over IPv4.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 664.64 Tm (Source excerpt:) Tj ET
+0.94 0.96 0.97 rg 43 629.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 632.64 Tm (if \(args.FirstOrDefault\(\) == "--worker"\) {) Tj ET
+0.94 0.96 0.97 rg 43 614.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 617.64 Tm (    Hardware.Run\(args.Skip\(1\).ToArray\(\)\); return;) Tj ET
+0.94 0.96 0.97 rg 43 599.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 602.64 Tm (}) Tj ET
+0.94 0.96 0.97 rg 43 584.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 587.64 Tm (var builder = WebApplication.CreateBuilder\(args\);) Tj ET
+0.94 0.96 0.97 rg 43 569.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 572.64 Tm (var port = int.TryParse\(Environment.GetEnvironmentVariable\("MONITOR_PORT"\),) Tj ET
+0.94 0.96 0.97 rg 43 554.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 557.64 Tm (    out var p\) ? p : 8765;) Tj ET
+0.94 0.96 0.97 rg 43 539.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 542.64 Tm (builder.WebHost.UseUrls\($"http://0.0.0.0:{port}"\);) Tj ET
+0.94 0.96 0.97 rg 43 524.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 527.64 Tm (var app = builder.Build\(\);) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 498.64 Tm (The middleware is registered before default-file and static-file serving. UseDefaultFiles) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 483.64 Tm (resolves / to index.html; UseStaticFiles serves the assets in wwwroot. API routes return) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 468.64 Tm (JSON through Minimal APIs. A console startup prints the six-digit pairing code and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 453.64 Tm (discovered IPv4 URLs. The desktop version obtains the code through its local management) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 438.64 Tm (pipe instead.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 413.64 Tm (Start the source server with dotnet run from the project root. Its browser URL is) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 398.64 Tm (http://127.0.0.1:8765 locally or http://<PC-private-IP>:8765 on the phone. PC Ethernet and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 383.64 Tm (phone Wi-Fi can work together when they share a reachable LAN; they do not need identical) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 368.64 Tm (connection types.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 343.64 Tm (The server sets Cache-Control: no-store, X-Content-Type-Options: nosniff, and a) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 328.64 Tm (Content-Security-Policy allowing only its own scripts/styles and blocking framing. Keep) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 313.64 Tm (JavaScript and styles in external files to fit this policy.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 288.64 Tm (When launched from the desktop, ServerController sets the working directory and passes) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 273.64 Tm (--contentRoot pointing to the bundled server directory. This makes web assets resolve) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 258.64 Tm (independently of the directory from which the user double-clicked the executable.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (4) Tj ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 12 0 R >>
+endobj
+14 0 obj
+<< /Length 4143 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 4 - Implement native brightness) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (Hardware.cs uses P/Invoke rather than a third-party monitor library. It declares) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (EnumDisplayMonitors in user32.dll and the physical monitor functions in dxva2.dll. Its) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 689.64 Tm (Physical structure contains an IntPtr handle and a fixed 128-character Unicode) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 674.64 Tm (description, matching the native layout.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 649.64 Tm (First enumerate logical display monitors. For each HMONITOR, call) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 634.64 Tm (GetNumberOfPhysicalMonitorsFromHMONITOR and GetPhysicalMonitorsFromHMONITOR. Collect the) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 619.64 Tm (physical handles, then expose their current enumeration index as the API ID. Always call) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 604.64 Tm (DestroyPhysicalMonitor in finally for each acquired handle, including after failures.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 579.64 Tm (GetMonitorBrightness returns minimum, current, and maximum native values. A monitor is) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 564.64 Tm (supported only when that read succeeds and maximum exceeds minimum. Convert native) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 549.64 Tm (brightness to a percentage:) Tj ET
+0.94 0.96 0.97 rg 43 514.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 517.64 Tm (percentage = round\(100 * \(current - minimum\) / \(maximum - minimum\)\)) Tj ET
+0.94 0.96 0.97 rg 43 499.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 502.64 Tm (target = minimum + round\(\(maximum - minimum\) * requestedPercent / 100\)) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 473.64 Tm (For a brightness write, validate the index against the freshly enumerated handles, read) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 458.64 Tm (the native range, compute target, and call SetMonitorBrightness. Then call) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 443.64 Tm (GetMonitorBrightness again. confirmed is true only when the readback succeeds and actual) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 428.64 Tm (equals target. Return nullable brightness when readback is unavailable.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 403.64 Tm (Representative response:) Tj ET
+0.94 0.96 0.97 rg 43 368.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 371.64 Tm ({"requested":25,"confirmed":true,"brightness":25}) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 342.64 Tm (If the monitor rounds differently, return its actual percentage and confirmed false. If) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 327.64 Tm (the write succeeds but readback fails, return brightness null and confirmed false. Never) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 312.64 Tm (equate a successful write call with verified physical output.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 287.64 Tm (IDs are enumeration positions, not durable device identities. Unplugging or rearranging) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 272.64 Tm (displays can change them. Refresh after cable changes before sending more writes. Internal) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 257.64 Tm (laptop displays and some docks/adapters do not support this method. The current) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 242.64 Tm (implementation does not use WMI brightness as a fallback.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (5) Tj ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 14 0 R >>
+endobj
+16 0 obj
+<< /Length 2926 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 5 - Implement display off and wake) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (The power branch runs before physical monitor enumeration because these commands target) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (Windows' display behavior globally.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 679.64 Tm (For off, SendMessageTimeout broadcasts WM_SYSCOMMAND with SC_MONITORPOWER and lParam 2.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 664.64 Tm (The source uses HWND_BROADCAST 0xffff, message 0x112, wParam 0xf170, SMTO_ABORTIFHUNG 2,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 649.64 Tm (and a 2000 ms timeout. A zero return becomes a worker error.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 624.64 Tm (For wake, call SetThreadExecutionState with ES_DISPLAY_REQUIRED \(0x00000002\). This wakes) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 609.64 Tm (the display and resets Windows' display idle timer. The implementation intentionally omits) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 594.64 Tm (ES_CONTINUOUS: the worker exits and the normal display timeout should apply afterward. The) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 579.64 Tm (validation history records this change from an earlier wake broadcast.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 554.64 Tm (Both successful operations return:) Tj ET
+0.94 0.96 0.97 rg 43 519.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 522.64 Tm ({"requested":true,"confirmed":false}) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 493.64 Tm (This acknowledges the Windows request, not the visible state of every display. The) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 478.64 Tm (implementation has no physical power-state readback. Screen savers and lock screens are) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 463.64 Tm (separate from display power; the app does not unlock the PC or dismiss them.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 438.64 Tm (In the interface, turning displays off asks for confirmation. Both power buttons lock) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 423.64 Tm (during an operation. The UI explains that the PC remains running and keyboard/mouse) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 408.64 Tm (recovery may be necessary. Test wake with a recovery method available before relying on) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 393.64 Tm (phone-only control.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (6) Tj ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 16 0 R >>
+endobj
+18 0 obj
+<< /Length 3811 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 6 - Isolate hardware operations) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (Native monitor drivers can block. Program.cs therefore launches a separate worker per) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (list, brightness, or power command instead of calling Hardware directly in the HTTP) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 689.64 Tm (process.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 664.64 Tm (A SemaphoreSlim\(1\) serializes all hardware operations globally, including monitor reads. A) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 649.64 Tm (request waits at most two seconds for the gate; failure returns HTTP 503. After acquiring) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 634.64 Tm (it, the server starts its own executable with --worker and command arguments. When hosted) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 619.64 Tm (by dotnet, it first passes the assembly path. ArgumentList avoids shell-built command) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 604.64 Tm (strings.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 579.64 Tm (The worker redirects stdout and stderr, runs with UseShellExecute false and CreateNoWindow) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 564.64 Tm (true, and inherits the environment. Read both streams asynchronously to avoid pipe-buffer) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 549.64 Tm (deadlocks. WaitForExitAsync has an eight-second deadline. On timeout, kill the worker) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 534.64 Tm (tree, wait for exit, and return HTTP 504. A nonzero exit returns 502 with the worker) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 519.64 Tm (error. Success returns stdout as application/json. Release the gate in finally.) Tj ET
+0.94 0.96 0.97 rg 43 484.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 487.64 Tm (HTTP request -> wait for gate \(2 s maximum\)) Tj ET
+0.94 0.96 0.97 rg 43 469.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 472.64 Tm (             -> start worker -> native operation \(8 s maximum\)) Tj ET
+0.94 0.96 0.97 rg 43 454.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 457.64 Tm (             -> parse/display JSON response) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 428.64 Tm (The browser has its own 12-second fetch deadline. A browser timeout does not prove the) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 413.64 Tm (command failed: it may already have reached the hardware. Reconnect and read the actual) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 398.64 Tm (brightness before retrying. Hardware writes are not replayed automatically after) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 383.64 Tm (reconnection.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 358.64 Tm (MONITOR_DEMO=1 switches the worker to simulated responses before native calls. Listing) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 343.64 Tm (returns a supported Demo monitor at 50%; brightness returns the requested value with no) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 328.64 Tm (confirmed readback; power returns an unconfirmed simulated acknowledgement. Demo writes) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 313.64 Tm (are not persisted as a simulated brightness model.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (7) Tj ET
+endstream
+endobj
+19 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 18 0 R >>
+endobj
+20 0 obj
+<< /Length 3901 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 7 - Add pairing and request) Tj ET
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 734.64 Tm (protection) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 693.39 Tm (PairingState stores its data in memory under a lock. It generates a cryptographically) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 678.39 Tm (random six-digit code from 100000 through 999999, valid for ten minutes. Renewal chooses a) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 663.39 Tm (different code, resets expiry, and clears the attempt counters.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 638.39 Tm (Pairing tracks attempts by remote IP in a ten-minute window. The first ten attempts are) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 623.39 Tm (allowed to be evaluated; further attempts return 429. Incorrect or expired codes return) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 608.39 Tm (401. Successful pairing creates 32 random bytes encoded as a hex token and stores a) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 593.39 Tm (twelve-hour server-side expiry.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 568.39 Tm (The server sends session as an HttpOnly, SameSite=Strict cookie with a twelve-hour MaxAge.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 553.39 Tm (It is not Secure because the local transport is HTTP. JavaScript does not read the token;) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 538.39 Tm (same-origin fetch sends the cookie. Logout removes that token. Renewal preserves existing) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 523.39 Tm (sessions; revocation renews the code and clears every session. Server restart loses all) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 508.39 Tm (sessions and creates a fresh code.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 483.39 Tm (Middleware accepts Host values matching localhost, loopback IP addresses, or the) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 468.39 Tm (implemented private IPv4 ranges: 10/8, 192.168/16, and 172.16/12. For every non-GET) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 453.39 Tm (request it requires both an exact Origin of http://<request-host> and X-Monitor-Request:) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 438.39 Tm (1. All /api paths except /api/pair require a valid session, including /api/status.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 413.39 Tm (The Host check validates the requested host; it is not a firewall rule restricting the) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 398.39 Tm (client's source IP. Firewall scope and network configuration still matter. Binding to all) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 383.39 Tm (IPv4 interfaces permits LAN access, so use trusted Wi-Fi, Private-profile firewall access,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 368.39 Tm (and no router port forwarding. The implementation does not configure the firewall) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 353.39 Tm (automatically or implement HTTPS.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 328.39 Tm (Sessions and expired attempt entries are not periodically pruned, and there is no) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 313.39 Tm (distributed rate limiter or persistent identity store. Those are future concerns if the) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 298.39 Tm (local single-user design grows substantially.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (8) Tj ET
+endstream
+endobj
+21 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 20 0 R >>
+endobj
+22 0 obj
+<< /Length 4431 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 8 - Define the HTTP contract) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (Every POST uses JSON plus X-Monitor-Request: 1 and the matching Origin. After pairing,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (include the session cookie. Browser requests provide Origin automatically; a command-line) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 689.64 Tm (client must supply it explicitly.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 664.64 Tm (- POST /api/pair: {"code":"123456"}; returns {"paired":true} and cookie.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 646.64 Tm (- POST /api/logout: {}; removes the current session and cookie.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 628.64 Tm (- GET /api/status: {"online":true,"simulated":false} in ordinary mode.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 610.64 Tm (- GET /api/monitors: array of id, name, supported, nullable brightness.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 592.64 Tm (- POST /api/monitors/{id}/brightness: {"value":25}; returns requested, confirmed, nullable) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 577.64 Tm (brightness.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 559.64 Tm (- POST /api/displays/power: {"state":"off"} or {"state":"wake"}; returns requested and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 544.64 Tm (confirmed.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 519.64 Tm (Monitor IDs must parse as nonnegative integers. Brightness values must be integers from 0) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 504.64 Tm (to 100. Power state must be off or wake. Invalid route inputs return 400; a valid-looking) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 489.64 Tm (monitor index that no longer exists fails in the worker.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 464.64 Tm (Example browser request, executed from the paired app page:) Tj ET
+0.94 0.96 0.97 rg 43 429.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 432.64 Tm (const response = await fetch\('/api/monitors/0/brightness', {) Tj ET
+0.94 0.96 0.97 rg 43 414.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 417.64 Tm (  method: 'POST',) Tj ET
+0.94 0.96 0.97 rg 43 399.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 402.64 Tm (  headers: {) Tj ET
+0.94 0.96 0.97 rg 43 384.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 387.64 Tm (    'Content-Type': 'application/json',) Tj ET
+0.94 0.96 0.97 rg 43 369.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 372.64 Tm (    'X-Monitor-Request': '1') Tj ET
+0.94 0.96 0.97 rg 43 354.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 357.64 Tm (  },) Tj ET
+0.94 0.96 0.97 rg 43 339.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 342.64 Tm (  body: JSON.stringify\({ value: 25 }\)) Tj ET
+0.94 0.96 0.97 rg 43 324.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 327.64 Tm (}\);) Tj ET
+0.94 0.96 0.97 rg 43 309.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 312.64 Tm (const result = await response.json\(\);) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 283.64 Tm (Status meanings: 401 means missing/expired session or bad pairing code; 403 means Host or) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 268.64 Tm (POST protection rejection; 429 means pairing attempt limit; 503 means hardware controller) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 253.64 Tm (busy; 504 means worker timeout; 502 means a worker/native operation failed. Some body) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 238.64 Tm (binding errors are handled directly by ASP.NET Core.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 213.64 Tm (Monitor list example:) Tj ET
+0.94 0.96 0.97 rg 43 178.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 181.64 Tm ([{"id":"0","name":"Generic PnP Monitor","supported":true,"brightness":50}]) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (9) Tj ET
+endstream
+endobj
+23 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 22 0 R >>
+endobj
+24 0 obj
+<< /Length 3372 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 9 - Build the iPhone interface) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (index.html contains the connection status, pairing form, monitor container, refresh/logout) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (toolbar, and all-display power card. app.js constructs one monitor card for each returned) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 689.64 Tm (ID, using DOM methods and textContent for monitor names and messages.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 664.64 Tm (Each card has a 0-100 range slider, an output percentage, presets at 25/50/75/100, a) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 649.64 Tm (status note, and an explicit retry button. Unsupported controls are disabled and show) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 634.64 Tm (DDC/CI advice. The empty-monitor message appears when enumeration returns no monitors.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 609.64 Tm (style.css uses a dark palette, a centered 640 px maximum layout, wrapping button groups,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 594.64 Tm (48 px touch targets, visible keyboard focus, and safe-area insets through) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 579.64 Tm (env\(safe-area-inset-*\). The viewport includes viewport-fit=cover. Status regions use) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 564.64 Tm (role=status and live announcements; sliders have accessible names and descriptive notes.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 539.64 Tm (Safari can add the page to the home screen. The page includes) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 524.64 Tm (apple-mobile-web-app-capable, but there is no service worker, offline cache, or full) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 509.64 Tm (installable PWA implementation. The Windows icon is not currently configured as an) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 494.64 Tm (apple-touch-icon for the phone.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 469.64 Tm (On startup, load requests status and monitor readings. A valid existing cookie restores) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 454.64 Tm (the controller; otherwise pairing is required. An incorrect/expired code has explicit) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 439.64 Tm (messaging. Some current UI strings still refer to the PC console; with the packaged) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 424.64 Tm (launcher the code is displayed in its window.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 399.64 Tm (Keep the HTML and JavaScript element IDs in sync. Frontend checks execute the actual) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 384.64 Tm (script against a minimal DOM, so new elements or event behavior may require updates to) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 369.64 Tm (that fixture.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (10) Tj ET
+endstream
+endobj
+25 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 24 0 R >>
+endobj
+26 0 obj
+<< /Length 3563 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 10 - Handle rapid input and) Tj ET
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 734.64 Tm (reconnection) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 693.39 Tm (app.js keeps cards in a Map, tracks a session epoch, and stores per-card pending value,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 678.39 Tm (running state, revision, confirmed reading, desired value, and debounce timer.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 653.39 Tm (Slider input waits 180 ms before sending; preset buttons submit immediately. While a card) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 638.39 Tm (has an in-flight write, later changes replace its pending value. When the request) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 623.39 Tm (finishes, only the latest pending value is sent. Revisions prevent an older response from) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 608.39 Tm (overwriting a newer visible intent. Successful readback updates the last confirmed value) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 593.39 Tm (even when the displayed intent has moved on.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 568.39 Tm (On failure, discard queued changes, restore the last confirmed reading when available, and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 553.39 Tm (show Retry brightness. When readback differs from the request, show both values. When) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 538.39 Tm (readback is absent, label the request unconfirmed rather than reporting success as a fact.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 513.39 Tm (Refresh and power are disabled while brightness is active or pending. Brightness is) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 498.39 Tm (disabled during refresh or power. Different monitor cards can submit while another card is) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 483.39 Tm (running, but the server's global semaphore serializes native work.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 458.39 Tm (api uses AbortController with a 12-second timeout. A session change increments epoch,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 443.39 Tm (aborts tracked requests, clears pending commands, and rejects stale responses. Window) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 428.39 Tm (offline events also invalidate active work. The UI preserves card nodes across refresh to) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 413.39 Tm (retain slider identity, while removing nodes for missing monitors.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 388.39 Tm (On visibilitychange, a persisted pageshow, or online, load rechecks the session and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 373.39 Tm (readings. If hardware work is still active, refresh waits until idle. Manual Reconnect is) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 358.39 Tm (available after connection failure. There is no automatic replay of hardware commands and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 343.39 Tm (no continuous monitor polling loop in the web page.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (11) Tj ET
+endstream
+endobj
+27 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 26 0 R >>
+endobj
+28 0 obj
+<< /Length 3506 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 11 - Add local launcher management) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (The launcher must read pairing state and stop its own server without exposing) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (administrative actions to the phone network. Use a named pipe restricted to the current) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 689.64 Tm (Windows user, plus a random per-launch secret.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 664.64 Tm (ServerController generates a GUID-based pipe name and a 32-byte hex secret, then passes) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 649.64 Tm (MONITOR_MANAGEMENT_PIPE and MONITOR_MANAGEMENT_SECRET through the child's environment. The) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 634.64 Tm (server begins LocalManagement after HTTP startup; successful status therefore establishes) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 619.64 Tm (management readiness after hosting has started.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 594.64 Tm (ManagementProtocol.cs is shared by both projects. Requests contain Version, Secret, and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 579.64 Tm (Command. Replies contain Version, Running, optional Code/Expires, and optional Error. Each) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 564.64 Tm (message is UTF-8 JSON terminated by a newline. The reader enforces a 4096-byte bound. Both) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 549.64 Tm (sides use protocol version 1.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 524.64 Tm (The server creates NamedPipeServerStream with CurrentUserOnly. It compares the supplied) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 509.64 Tm (secret with CryptographicOperations.FixedTimeEquals. Supported commands are status, renew,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 494.64 Tm (revoke, and shutdown. Unauthorized requests return an error and cannot rotate the code.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 479.64 Tm (Malformed or disconnected clients are caught so they do not terminate the listener.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 454.64 Tm (The server allows three seconds for one management exchange. The launcher applies a) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 439.64 Tm (two-second connect/exchange deadline. It validates the reply version and error. shutdown) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 424.64 Tm (replies first, then stops the ASP.NET application. These management operations have no) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 409.64 Tm (HTTP equivalents.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 384.64 Tm (Keep this management pipe separate from the desktop activation pipe. The activation pipe) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 369.64 Tm (only asks an already-running launcher to restore its window; it does not expose pairing) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 354.64 Tm (state or control the server.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (12) Tj ET
+endstream
+endobj
+29 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 28 0 R >>
+endobj
+30 0 obj
+<< /Length 3489 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 12 - Own and supervise server) Tj ET
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 734.64 Tm (processes) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 693.39 Tm (ServerController locates server/MonitorRemote.exe relative to the desktop executable. It) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 678.39 Tm (launches without a console and supplies the configured port, management variables, and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 663.39 Tm (content root. It drains redirected stdout/stderr without retaining raw server output,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 648.39 Tm (which can contain URLs or credentials.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 623.39 Tm (OwnedJob creates a Windows job object and sets JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 608.39 Tm (\(0x2000\). Assign the server to that job so closing the job terminates the owned process) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 593.39 Tm (tree, including workers under normal inheritance. This prevents the launcher from leaving) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 578.39 Tm (its server behind.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 553.39 Tm (There is a startup race: the child could spawn workers before being assigned to the job.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 538.39 Tm (The implementation resolves it with MONITOR_LAUNCH_GATE, a unique temporary file path. The) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 523.39 Tm (child waits up to ten seconds for that file; the launcher creates it only after job) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 508.39 Tm (assignment. The launcher deletes its own gate file in finally.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 483.39 Tm (Readiness retries management status within a fifteen-second startup budget. Failed startup) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 468.39 Tm (calls Stop to clean up ownership. Port conflicts do not cause the launcher to attach to,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 453.39 Tm (terminate, or adopt an unrelated server. Retrying an already-running owned server) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 438.39 Tm (preserves its actual active port even if the next-start preference has changed.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 413.39 Tm (Stop first requests graceful shutdown, waits up to four seconds, then kills the process) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 398.39 Tm (tree if necessary. Finally dispose the job and process handles and clear the management) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 383.39 Tm (secret/name. Exited events update the window when the child disappears unexpectedly.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 358.39 Tm (Do not replace this with broad process-name termination: ownership matters when other apps) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 343.39 Tm (or another console server may be running.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (13) Tj ET
+endstream
+endobj
+31 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 30 0 R >>
+endobj
+32 0 obj
+<< /Length 3878 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 13 - Finish the desktop experience) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (desktop/Program.cs uses an STA entry point for Windows Forms. A Local mutex named with the) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (current user SID prevents duplicate launchers in that session. A second instance writes to) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 689.64 Tm (a current-user activation pipe, and the first instance restores its form when its handle) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 674.64 Tm (exists.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 649.64 Tm (MainForm builds a DPI-aware window with Start/Stop/Restart, adapter selection, phone URL,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 634.64 Tm (offline-generated QR code, pairing code/expiry, renew/revoke controls, next-start port,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 619.64 Tm (settings, and diagnostics. It enumerates operational non-loopback adapters and offers) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 604.64 Tm (their private IPv4 addresses. QR uses QRCoder with error correction Q and GetGraphic\(6\),) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 589.64 Tm (generated locally without a web service.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 564.64 Tm (A one-second timer updates the pairing countdown and requests management status while) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 549.64 Tm (idle. A busy flag prevents overlapping launcher operations. Errors clear readiness, show) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 534.64 Tm (recovery instructions, and enter the bounded diagnostic log. Only the latest 80 diagnostic) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 519.64 Tm (lines are retained.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 494.64 Tm (Closing the window hides it to NotifyIcon; a one-time explanation is saved. Tray commands) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 479.64 Tm (restore the window, start/stop the server, open the controller, or Exit. Exit stops the) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 464.64 Tm (server and disposes the tray icon. Open local controller uses 127.0.0.1 and the active) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 449.64 Tm (port; the QR uses the selected LAN address.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 424.64 Tm (Preferences are JSON in %LOCALAPPDATA%/MonitorRemote/desktop.json. Fields are AutoStart) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 409.64 Tm (\(default true\), CloseExplained, Port \(default 8765\), and Address. Invalid or unreadable) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 394.64 Tm (settings fall back to defaults; out-of-range ports are reset.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 369.64 Tm (Opt-in sign-in startup writes a quoted executable path under) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 354.64 Tm (HKCU/Software/Microsoft/Windows/CurrentVersion/Run, value MonitorRemote. Disabling removes) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 339.64 Tm (that value. If registry writes fail, the checkbox rolls back and shows a diagnostic.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 324.64 Tm (Moving the app requires updating the startup path by enabling startup from the new) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 309.64 Tm (location.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (14) Tj ET
+endstream
+endobj
+33 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 32 0 R >>
+endobj
+34 0 obj
+<< /Length 3307 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 14 - Create and embed the Windows) Tj ET
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 734.64 Tm (icon) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 693.39 Tm (The existing icon is a teal monitor and golden sun on a dark navy rounded background. It) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 678.39 Tm (is created with vector-style drawing operations, not a generated photograph or external) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 663.39 Tm (icon service.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 638.39 Tm (desktop/assets contains monitor-remote.svg, monitor-remote.png, monitor-remote.ico, and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 623.39 Tm (generate-icon.ps1. The PowerShell script independently draws the geometry with) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 608.39 Tm (System.Drawing; it does not rasterize the SVG. If changing the design, update both the SVG) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 593.39 Tm (reference and drawing script to keep them consistent.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 568.39 Tm (The script draws at 1024 by 1024, applies antialiasing, resizes with high-quality bicubic) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 553.39 Tm (interpolation, and encodes PNG frames for 16, 20, 24, 32, 40, 48, 64, 128, and 256 pixels.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 538.39 Tm (It constructs the ICO directory and offsets around these nine PNG frames. The 256-pixel) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 523.39 Tm (frame is also saved as monitor-remote.png.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 498.39 Tm (Regenerate only when intentionally changing the icon:) Tj ET
+0.94 0.96 0.97 rg 43 463.39 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 466.39 Tm (powershell -ExecutionPolicy Bypass -File .\\desktop\\assets\\generate-icon.ps1) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 437.39 Tm (The desktop project sets ApplicationIcon to assets/monitor-remote.ico for) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 422.39 Tm (Explorer/executable branding and embeds the file as MonitorRemote.AppIcon. MainForm loads) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 407.39 Tm (that embedded resource; NotifyIcon reuses the form icon. Rebuild and republish to update) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 392.39 Tm (the executable; changing only the source ICO does not modify the already-built App folder.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 367.39 Tm (QRCoder is the explicit third-party package. Include THIRD_PARTY_NOTICES.md with) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 352.39 Tm (distributions and preserve its MIT notice. The self-contained package also contains) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 337.39 Tm (Microsoft runtime assemblies.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (15) Tj ET
+endstream
+endobj
+35 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 34 0 R >>
+endobj
+36 0 obj
+<< /Length 4913 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 15 - Verify the implementation) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (Run these checks from the project root. Build in Debug before smoke.mjs because that test) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (starts bin/Debug/net10.0/MonitorRemote.dll explicitly.) Tj ET
+0.94 0.96 0.97 rg 43 669.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 672.64 Tm (dotnet build MonitorRemote.csproj) Tj ET
+0.94 0.96 0.97 rg 43 654.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 657.64 Tm (dotnet build desktop/MonitorRemote.Desktop.csproj) Tj ET
+0.94 0.96 0.97 rg 43 639.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 642.64 Tm (node --check wwwroot/app.js) Tj ET
+0.94 0.96 0.97 rg 43 624.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 627.64 Tm (node tests/smoke.mjs) Tj ET
+0.94 0.96 0.97 rg 43 609.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 612.64 Tm (node tests/frontend.mjs) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 583.64 Tm (The API smoke test creates its own server on port 18765 with MONITOR_DEMO=1. It checks) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 568.64 Tm (served UI, pairing, unauthorized access, rejected cross-origin requests, brightness/power) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 553.64 Tm (input validation, simulated worker JSON, and logout. It does not change hardware settings.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 528.64 Tm (frontend.mjs executes the actual app.js in a minimal DOM with controlled fetch/timers. It) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 513.64 Tm (tests latest intent, readback differences, unconfirmed results, failure/retry, timeout) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 498.64 Tm (without replay, session changes, serialized power, foreground recovery, card) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 483.64 Tm (preservation/removal, logout, and pairing. It does not prove Safari layout, browser focus,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 468.64 Tm (or VoiceOver behavior.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 443.64 Tm (The packaged desktop supports --check, which runs LauncherChecks without the GUI and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 428.64 Tm (forces demo hardware. To rerun against the existing App package:) Tj ET
+0.94 0.96 0.97 rg 43 393.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 396.64 Tm ($env:MONITOR_CHECK_REPORT = Join-Path $PWD 'docs\\launcher-check-current.txt') Tj ET
+0.94 0.96 0.97 rg 43 378.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 381.64 Tm ($check = Start-Process -FilePath .\\App\\MonitorRemote.Desktop.exe `) Tj ET
+0.94 0.96 0.97 rg 43 363.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 366.64 Tm (    -ArgumentList '--check' -WindowStyle Hidden -Wait -PassThru) Tj ET
+0.94 0.96 0.97 rg 43 348.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 351.64 Tm ($check.ExitCode) Tj ET
+0.94 0.96 0.97 rg 43 333.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 336.64 Tm (Get-Content $env:MONITOR_CHECK_REPORT) Tj ET
+0.94 0.96 0.97 rg 43 318.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 321.64 Tm (Remove-Item Env:\\MONITOR_CHECK_REPORT) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 292.64 Tm (A fresh publish must include the server subfolder; running --check against a bare desktop) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 277.64 Tm (build lacks that bundled executable. Launcher checks cover readiness, static assets,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 262.64 Tm (management authentication, pairing renewal/revocation, oversized message recovery, stop,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 247.64 Tm (port conflict cleanup, restart revocation, and closing job ownership.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 222.64 Tm (Historical evidence: docs/VALIDATION.md records successful builds, API/frontend checks,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 207.64 Tm (and sixteen packaged launcher assertions; tests/launcher-check-results.txt preserves their) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 192.64 Tm (report. The user has reported the app works. This documentation task does not recertify) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 177.64 Tm (every runtime or physical behavior.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (16) Tj ET
+endstream
+endobj
+37 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 36 0 R >>
+endobj
+38 0 obj
+<< /Length 4142 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 16 - Publish and distribute) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (package.ps1 publishes server and launcher in Release for a selected Windows runtime.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (Default win-x64 is self-contained. It creates a unique folder under artifacts, publishes) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 689.64 Tm (the server to server/, publishes the launcher into the package root, and copies README.md) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 674.64 Tm (and THIRD_PARTY_NOTICES.md. A failed publish throws and retains partial output for) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 659.64 Tm (diagnosis.) Tj ET
+0.94 0.96 0.97 rg 43 624.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 627.64 Tm (powershell -ExecutionPolicy Bypass -File .\\package.ps1) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 598.64 Tm (Resulting layout:) Tj ET
+0.94 0.96 0.97 rg 43 563.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 566.64 Tm (MonitorRemote-win-x64-<timestamp>-<suffix>/) Tj ET
+0.94 0.96 0.97 rg 43 548.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 551.64 Tm (  MonitorRemote.Desktop.exe) Tj ET
+0.94 0.96 0.97 rg 43 533.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 536.64 Tm (  runtime DLLs and supporting files) Tj ET
+0.94 0.96 0.97 rg 43 518.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 521.64 Tm (  README.md) Tj ET
+0.94 0.96 0.97 rg 43 503.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 506.64 Tm (  THIRD_PARTY_NOTICES.md) Tj ET
+0.94 0.96 0.97 rg 43 488.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 491.64 Tm (  server/) Tj ET
+0.94 0.96 0.97 rg 43 473.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 476.64 Tm (    MonitorRemote.exe) Tj ET
+0.94 0.96 0.97 rg 43 458.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 461.64 Tm (    server/runtime supporting files) Tj ET
+0.94 0.96 0.97 rg 43 443.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 446.64 Tm (    wwwroot/index.html, style.css, app.js) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 417.64 Tm (Keep the entire package together. The existing App directory contains the current) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 402.64 Tm (ready-to-use distribution; source edits do not update it automatically. Build a fresh) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 387.64 Tm (package, verify it, exit the old app, and only then deliberately replace a deployment) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 372.64 Tm (folder. Do not overwrite a running package or discard existing source edits.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 347.64 Tm (Optional -FrameworkDependent omits bundled runtimes and requires matching .NET 10 ASP.NET) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 332.64 Tm (Core and Windows Desktop runtimes on the user's PC. Optional -Runtime win-arm64 selects) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 317.64 Tm (ARM64; the project history does not validate that target. Executables are unsigned; there) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 302.64 Tm (is no installer, auto-updater, or certificate-signing pipeline.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 277.64 Tm (For a server-only deployment, publish MonitorRemote.csproj separately. It is the console) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 262.64 Tm (server, not the full desktop/tray package. Launch with a suitable working) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 247.64 Tm (directory/content root so its web assets resolve.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (17) Tj ET
+endstream
+endobj
+39 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 38 0 R >>
+endobj
+40 0 obj
+<< /Length 4361 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 17 - Connect and troubleshoot) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (For normal use, double-click App/MonitorRemote.Desktop.exe, leave automatic server start) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (enabled, select the PC's reachable private LAN address, scan its QR using iPhone Camera,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 689.64 Tm (open Safari, and enter the displayed code. Keep the PC awake and the package folder) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 674.64 Tm (intact.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 649.64 Tm (Enable DDC/CI in the monitor's own menu. If brightness is unavailable, test a direct) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 634.64 Tm (monitor connection instead of a dock/adapter and refresh discovery. Do not treat an) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 619.64 Tm (unsupported result as an API authentication failure.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 594.64 Tm (If the phone cannot connect, check that the server shows Running, the chosen IP belongs to) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 579.64 Tm (the reachable home network, the port matches, and the PC is awake. Guest Wi-Fi/client) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 564.64 Tm (isolation and VPN routing can block access. A router DHCP reservation can stabilize the PC) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 549.64 Tm (URL.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 524.64 Tm (If Windows requests firewall access, permit Private networks. The app does not modify) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 509.64 Tm (rules. If a scoped rule is necessary, the README provides this administrator command; use) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 494.64 Tm (the actual configured port:) Tj ET
+0.94 0.96 0.97 rg 43 459.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 462.64 Tm (New-NetFirewallRule -DisplayName 'Monitor Remote Home LAN' `) Tj ET
+0.94 0.96 0.97 rg 43 444.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 447.64 Tm (    -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8765 `) Tj ET
+0.94 0.96 0.97 rg 43 429.64 509.28 13 re f
+BT /F3 8.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 432.64 Tm (    -Profile Private -RemoteAddress LocalSubnet) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 403.64 Tm (If a port is occupied, change the next-start port in the launcher and restart. The) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 388.64 Tm (launcher does not terminate the other process. Renew pairing when the code expires; use) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 373.64 Tm (Disconnect all phones to revoke sessions. HTTP carries the code and cookie without) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 358.64 Tm (transport encryption, so keep access on a trusted LAN and do not expose the port publicly.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 333.64 Tm (After connection loss, reconnect and refresh before retrying a command. After cabling) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 318.64 Tm (changes, refresh before choosing a monitor. For display wake failure, use keyboard/mouse) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 303.64 Tm (recovery; the command does not wake a sleeping PC.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 278.64 Tm (Manual release checks still matter: Safari touch/layout/VoiceOver, QR scanning, rapid) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 263.64 Tm (slider input, Wi-Fi recovery, repeated off/wake, tray and second-instance behavior,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 248.64 Tm (sign-in enable/disable, process-crash cleanup including workers, and a target Windows) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 233.64 Tm (machine without .NET preinstalled.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (18) Tj ET
+endstream
+endobj
+41 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 40 0 R >>
+endobj
+42 0 obj
+<< /Length 5096 >>
+stream
+BT /F2 21 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 760.89 Tm (Step 18 - Maintain the app confidently) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 719.64 Tm (To change a feature, trace it through the ownership boundaries. A new phone operation) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 704.64 Tm (typically needs a route and validation in Program.cs, worker behavior in Hardware.cs,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 689.64 Tm (interface changes in app.js/index.html, and demo/test coverage. A new desktop management) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 674.64 Tm (action needs the shared protocol, LocalManagement, ServerController, and MainForm.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 649.64 Tm (Keep requested values distinct from confirmed readback. Preserve worker isolation,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 634.64 Tm (deadlines, physical-handle cleanup, and owned-process cleanup. Keep session epochs and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 619.64 Tm (card revisions when changing asynchronous UI logic. Never automatically replay a) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 604.64 Tm (potentially executed hardware command after a timeout.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 579.64 Tm (Change authentication in PairingState and middleware together; add tests for) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 564.64 Tm (expiry/revocation and rejected requests. Change packaging through package.ps1 and project) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 549.64 Tm (exclusions so nested builds do not consume distribution files. For icon updates,) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 534.64 Tm (regenerate assets and republish both the executable branding and embedded resource.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 509.64 Tm (The reproducible development loop is: edit source, build both projects, run the targeted) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 494.64 Tm (API/frontend checks, publish a new package, run its launcher --check, then manually) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 479.64 Tm (exercise the behaviors changed on Windows and iPhone. Preserve the old working) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 464.64 Tm (distribution until the new package is verified.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 439.64 Tm (Current boundaries: HTTP only; in-memory sessions; enumeration-based monitor IDs; external) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 424.64 Tm (DDC/CI brightness only; global unconfirmed display power; no PC wake-from-sleep, cloud) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 409.64 Tm (access, hardware command replay, or automatic updates. These are properties of the) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 394.64 Tm (implementation rather than promises of missing features.) Tj ET
+BT /F2 13 Tf 0.08 0.35 0.40 rg 1 0 0 1 48.00 364.64 Tm (Source references and development milestones) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 333.39 Tm (README.md is the current run/build reference. docs/IMPLEMENTATION.md records the original) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 318.39 Tm (approach; docs/POLISH_IMPLEMENTATION.md records interface/reliability planning;) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 303.39 Tm (docs/WINDOWS_APP_IMPLEMENTATION.md records launcher planning. Plans can contain deferred) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 288.39 Tm (ideas; source and current validation establish implemented behavior.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 263.39 Tm (The recorded progression was a console-hosted local web controller, a native wake) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 248.39 Tm (correction, phone-interface reliability polish, a portable Windows launcher, a Windows) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 233.39 Tm (icon, and distribution cleanup into App. docs/VALIDATION.md records milestone checks and) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 218.39 Tm (their limits. This guide organizes that work into a build sequence a developer can follow) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 203.39 Tm (and explain.) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 178.39 Tm (An editable Markdown copy accompanies the PDF. docs/build-developer-guide.mjs generates) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 163.39 Tm (the PDF with Node.js alone, so the documentation can be rebuilt without modifying the app) Tj ET
+BT /F1 10.4 Tf 0.12 0.18 0.25 rg 1 0 0 1 48.00 148.39 Tm (or installing a document tool.) Tj ET
+BT /F2 8 Tf 0.15 0.40 0.45 rg 1 0 0 1 48.00 807.89 Tm (MONITOR REMOTE  /  DEVELOPER REFERENCE) Tj ET
+0.78 0.85 0.87 RG 0.6 w 48 48 m 547.28 48 l S
+BT /F1 8 Tf 0.40 0.45 0.50 rg 1 0 0 1 48.00 32.00 Tm (Source-based guide | 1 October 2026) Tj ET
+BT /F2 9 Tf 0.12 0.18 0.25 rg 1 0 0 1 535.28 32.00 Tm (19) Tj ET
+endstream
+endobj
+43 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 42 0 R >>
+endobj
+44 0 obj
+<< /Title (Monitor Remote - Developer Build Guide) /Author (Monitor Remote project) /Subject (Architecture, implementation, validation and packaging) >>
+endobj
+xref
+0 45
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000241 00000 n 
+0000000338 00000 n 
+0000000440 00000 n 
+0000000535 00000 n 
+0000003806 00000 n 
+0000003958 00000 n 
+0000008896 00000 n 
+0000009048 00000 n 
+0000013109 00000 n 
+0000013263 00000 n 
+0000017534 00000 n 
+0000017688 00000 n 
+0000021884 00000 n 
+0000022038 00000 n 
+0000025017 00000 n 
+0000025171 00000 n 
+0000029035 00000 n 
+0000029189 00000 n 
+0000033143 00000 n 
+0000033297 00000 n 
+0000037781 00000 n 
+0000037935 00000 n 
+0000041360 00000 n 
+0000041514 00000 n 
+0000045130 00000 n 
+0000045284 00000 n 
+0000048843 00000 n 
+0000048997 00000 n 
+0000052539 00000 n 
+0000052693 00000 n 
+0000056624 00000 n 
+0000056778 00000 n 
+0000060138 00000 n 
+0000060292 00000 n 
+0000065258 00000 n 
+0000065412 00000 n 
+0000069607 00000 n 
+0000069761 00000 n 
+0000074175 00000 n 
+0000074329 00000 n 
+0000079478 00000 n 
+0000079632 00000 n 
+trailer
+<< /Size 45 /Root 1 0 R /Info 44 0 R >>
+startxref
+79801
+%%EOF

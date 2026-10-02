@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>assets/monitor-remote.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="assets/monitor-remote.ico" LogicalName="MonitorRemote.AppIcon" />
+    <Compile Include="../ManagementProtocol.cs" Link="ManagementProtocol.cs" />
+    <PackageReference Include="QRCoder" Version="1.8.0" />
+  </ItemGroup>
+</Project>

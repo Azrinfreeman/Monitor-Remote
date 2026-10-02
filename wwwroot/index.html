@@ -1,0 +1,107 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#101827">
+  <title>Monitor Remote</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="remote.css">
+  <link rel="stylesheet" href="audio.css">
+  <script src="app.js" defer></script>
+  <script src="features.js" defer></script>
+  <script src="remote.js" defer></script>
+  <script src="audio.js" defer></script>
+</head>
+<body>
+<main>
+  <header><p class="eyebrow">HOME DISPLAY CONTROL</p><h1>Monitor Remote</h1>
+    <p id="status" class="connection" role="status" aria-live="polite" data-state="connecting">Connecting…</p>
+    <button id="retry-connection" class="secondary" hidden>Reconnect</button>
+  </header>
+  <form id="pair" hidden>
+    <h2>Connect to your PC</h2>
+    <label for="code">Six-digit code shown in the PC app</label>
+    <input id="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required placeholder="000000">
+    <button id="connect">Connect</button>
+  </form>
+  <section id="controls" hidden aria-label="Monitor controls">
+    <div class="toolbar"><button id="refresh">Refresh readings</button><button id="logout">Disconnect</button></div>
+    <nav id="feature-tabs" class="feature-tabs" aria-label="PC controls" hidden>
+      <button id="tab-monitors" aria-pressed="true">Displays</button>
+      <button id="tab-desktop" aria-pressed="false">Desktop</button>
+      <button id="tab-audio" aria-pressed="false">Audio</button>
+    </nav>
+    <div id="pane-monitors">
+    <p id="empty" hidden>No monitors detected. Check cables and refresh readings.</p>
+    <div id="monitors"></div>
+    <article>
+      <p class="eyebrow">POWER</p><h2>All displays</h2>
+      <p>The PC stays running. If wake needs help, use your keyboard or mouse.</p>
+      <div class="power-actions"><button id="wake">Wake displays</button><button id="off" class="secondary">Turn displays off</button></div>
+      <p id="power-status" class="monitor-note" role="status">Visible display state is unconfirmed.</p>
+    </article>
+    </div>
+    <section id="pane-desktop" hidden aria-label="Remote desktop">
+      <article>
+        <p class="eyebrow">YOUR PC SCREEN</p><h2>Remote desktop</h2>
+        <p id="remote-note" role="status" aria-live="polite">Enable screen viewing in the PC app, then refresh displays.</p>
+        <div class="remote-selectors">
+          <label>Display<select id="remote-display" aria-label="Display to view"></select></label>
+          <label>Quality<select id="remote-quality"><option value="balanced">Balanced</option><option value="clear">Clear text</option><option value="low">Low bandwidth</option></select></label>
+        </div>
+        <div class="remote-actions"><button id="remote-refresh" class="secondary">Refresh displays</button><button id="remote-start">Start viewing</button><button id="remote-stop" class="secondary" disabled>Stop viewing</button></div>
+      </article>
+      <div id="remote-stage" class="remote-stage" hidden>
+        <div class="viewer-wrap"><canvas id="remote-canvas" aria-label="Live PC screen"></canvas></div>
+        <p id="remote-frame-state" class="monitor-note" role="status">Waiting for a fresh frame…</p>
+        <div class="remote-actions">
+          <button id="remote-control" disabled>Enable control</button>
+          <button id="remote-expand" class="secondary">Expand view</button>
+          <button id="remote-fit" class="secondary">Fit screen</button>
+          <button id="remote-zoom-out" class="secondary" aria-label="Zoom out">−</button><button id="remote-zoom-in" class="secondary" aria-label="Zoom in">+</button>
+        </div>
+        <label>Touch mode<select id="remote-mode"><option value="touchpad">Touchpad</option><option value="direct">Direct touch</option></select></label>
+        <div id="remote-touchpad" class="touchpad" role="application" aria-label="Touchpad for the PC mouse"><span>Slide to move · Tap to click<br>Two fingers to scroll · Pinch screen to zoom</span></div>
+        <div class="remote-actions">
+          <button id="remote-left" data-remote-input disabled>Left click</button><button id="remote-double" data-remote-input disabled>Double click</button>
+          <button id="remote-right" data-remote-input disabled>Right click</button><button id="remote-drag" data-remote-input aria-pressed="false" disabled>Drag</button>
+        </div>
+        <div id="remote-scroll" class="scroll-strip" aria-label="Slide to scroll">Slide here to scroll</div>
+        <p id="remote-gesture-help" class="monitor-note">Hold Drag while moving on the touchpad. In direct touch, enable Drag then touch and move on the screen. Long press for right click.</p>
+        <details id="remote-keyboard">
+          <summary>Keyboard</summary>
+          <p class="monitor-note">Click the intended text field on your PC first.</p>
+          <div class="remote-actions modifier-row"><button id="key-shift" data-remote-input aria-pressed="false" disabled>Shift</button><button id="key-ctrl" data-remote-input aria-pressed="false" disabled>Ctrl</button><button id="key-alt" data-remote-input aria-pressed="false" disabled>Alt</button></div>
+          <div id="keyboard-keys" class="keyboard-grid" aria-label="On-screen keys"></div>
+          <div id="keyboard-special" class="remote-actions" aria-label="Special keys"></div>
+          <div id="keyboard-shortcuts" class="remote-actions" aria-label="Keyboard shortcuts"></div>
+          <label for="remote-text">Type with your phone keyboard</label>
+          <textarea id="remote-text" maxlength="1024" rows="3" autocomplete="off" placeholder="Compose text, then send it to the PC" disabled></textarea>
+          <button id="remote-send-text" data-remote-input disabled>Send text</button>
+          <p id="remote-text-note" class="monitor-note" role="status">Text is sent once. Unsure outcomes are never resent automatically.</p>
+        </details>
+      </div>
+    </section>
+    <section id="pane-audio" hidden aria-label="PC audio controls">
+      <article>
+        <p class="eyebrow">PC SOUND</p><h2>Volume &amp; audio devices</h2>
+        <p id="audio-note" role="status" aria-live="polite">Enable audio volume control in the PC app, then refresh devices.</p>
+        <button id="audio-refresh" class="secondary">Refresh devices</button>
+      </article>
+      <div id="audio-pc"></div>
+      <article id="audio-all" hidden>
+        <p class="eyebrow">ALL PLAYBACK DEVICES</p><h2 id="audio-all-current">Mixed volume</h2>
+        <label for="audio-all-value">Choose a volume for all outputs</label><input id="audio-all-value" type="range" min="0" max="100" value="50"><p id="audio-all-requested">Apply 50%</p>
+        <div class="remote-actions"><button id="audio-all-apply">Apply to all</button><button id="audio-all-mute" class="secondary">Mute all</button><button id="audio-all-unmute" class="secondary">Unmute all</button></div>
+        <p id="audio-all-note" class="monitor-note" role="status">Applies to currently available playback devices. Microphones keep their own settings.</p>
+      </article>
+      <h2 id="audio-output-heading" hidden>Playback devices</h2><div id="audio-outputs"></div>
+      <h2 id="audio-input-heading" hidden>Microphones &amp; inputs</h2><div id="audio-inputs"></div>
+    </section>
+  </section>
+  <p class="footnote">Keep your PC awake on the same Wi-Fi. Use this app on your trusted home network.</p>
+</main>
+</body>
+</html>

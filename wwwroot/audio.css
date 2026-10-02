@@ -1,0 +1,5 @@
+.audio-badges{font-size:.8rem;color:#9ac2ff;margin:8px 0}
+.audio-card .monitor-heading output{font-size:1.5rem}.audio-card button{width:100%}
+.audio-card[data-muted=true]{border-color:#a1adbf}.audio-card[data-unavailable=true]{opacity:.65}
+#audio-output-heading,#audio-input-heading{margin:24px 0 8px}
+#audio-all-requested{font-variant-numeric:tabular-nums;margin:0 0 8px}

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+    <InternalsVisibleTo Include="MonitorRemote.Checks" />
+    <Compile Remove="desktop/**/*.cs;tests/**/*.cs;artifacts/**/*.cs;App/**/*.cs" />
+    <Content Remove="desktop/**;tests/**;artifacts/**;App/**;docs/**" />
+    <None Remove="desktop/**;artifacts/**;App/**" />
+  </ItemGroup>
+</Project>

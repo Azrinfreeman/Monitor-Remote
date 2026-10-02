@@ -1,0 +1,17 @@
+PASS: readiness reports authoritative pairing state
+PASS: packaged static assets served
+PASS: unauthorized management cannot access pairing code
+PASS: unauthorized command did not rotate code
+PASS: pairing through packaged server
+PASS: renewal rotates code and resets expiry
+PASS: renewal preserves existing sessions
+PASS: old code invalid after renewal
+PASS: revocation rotates code
+PASS: revocation invalidates sessions
+PASS: new code pairs after revocation
+PASS: oversized message leaves management available
+PASS: graceful stop frees port and releases process
+PASS: occupied port reports failure and cleans up owned process
+PASS: restart revokes old sessions
+PASS: closing job terminates owned server and frees port
+No physical monitor commands were issued. GUI, iPhone, sign-in startup and forced launcher crash need manual trials.
