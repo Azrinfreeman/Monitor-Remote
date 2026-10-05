@@ -1,10 +1,72 @@
 # Monitor Remote
 
-Use iPhone Safari to view a Windows PC screen, control its mouse with touch, type with an on-screen keyboard, and adjust PC and individual audio device volume on your trusted home network. Brightness and display off/wake controls are also available.
+**A Windows desktop companion that turns iPhone Safari into a local PC controller.**
+
+View a selected Windows display, control the mouse with touch, type from your phone, and adjust playback or microphone endpoint volume. External-monitor brightness and all-display off/wake controls are also available. A Windows Forms launcher manages the server, QR pairing, permissions and tray controls; the phone uses plain HTML, CSS and JavaScript without a native app or cloud service.
+
+**Platform:** Windows · **Backend:** C# / .NET 10 / ASP.NET Core · **Desktop:** Windows Forms · **Phone interface:** HTML, CSS, JavaScript and WebSockets
+
+This project targets a reachable, trusted home LAN. HTTP/WebSocket traffic is unencrypted; pairing and local permissions do not provide transport encryption. Away-from-home access, PC sound streaming, Windows unlocking and waking a sleeping PC are outside the current scope.
+
+## What it does
+
+| Area | Implemented behavior |
+| --- | --- |
+| Screen viewing | Live JPEG frames from one selected display, viewing quality choices, zoom and fit |
+| Mouse and keyboard | Touchpad or direct-touch input, drag/scroll/click controls, on-screen keys and committed Unicode text |
+| Audio | Default playback volume/mute and individual output/input endpoint controls; bulk actions target playback devices |
+| Displays | DDC/CI brightness where supported and off/wake requests for all displays |
+| Local control | Six-digit QR-assisted pairing, separate viewing/input/audio permissions, session revocation and Stop remote session |
+
+<details>
+<summary>Phone interface preview — synthetic demo</summary>
+
+![Monitor Remote phone interface showing a synthetic desktop and touch controls](docs/remote-desktop-demo.png)
+
+Existing browser demo capture from the 3 October 2026 validation. The displayed desktop and input are synthetic; this image does not establish real screen capture or iPhone Safari acceptance.
+
+</details>
+
+## Architecture and engineering choices
+
+```mermaid
+flowchart LR
+    Phone["iPhone Safari"] <-->|"LAN HTTP + WebSockets"| Server["ASP.NET Core server"]
+    Launcher["Windows Forms launcher + tray"] <-->|"Authenticated local named pipe"| Server
+    Server --> Sessions["Pairing + remote session ownership"]
+    Server <-->|"Local pipe"| Capture["Persistent capture worker"]
+    Server --> Hardware["Brightness / power workers"]
+    Server --> Audio["Bounded Windows Core Audio service"]
+    Sessions --> Input["Validated native input"]
+    Capture --> Windows["Windows APIs"]
+    Hardware --> Windows
+    Audio --> Windows
+    Input --> Windows
+```
+
+- **Process ownership:** a Windows job ties the launcher to its server and child processes. Brightness/power requests use short-lived workers; screen capture uses a separate persistent worker with bounded waits.
+- **Explicit permission and session boundaries:** viewing, input and audio permissions start disabled on server launch. Input requires viewing permission and phone-side control selection. Pairing revocation and heartbeat expiry end the remote session and release held input.
+- **Stale-state protection:** mouse/keyboard commands include frame sequence and display revision checks. Audio writes target endpoint IDs and a catalog revision; default-device guards prevent redirecting a queued PC-volume change.
+- **Honest operation results:** requested settings and readback are separate. Failed or uncertain commands are not automatically replayed after reconnection, and bulk audio operations report per-device results.
+
+The source includes origin/request validation, pairing rate limits, bounded input and same-site session cookies. These controls complement the trusted-LAN scope; the network guidance below explains the current transport limits.
+
+## Get started from source
+
+Use Windows with the .NET 10 SDK. Node.js with built-in `fetch` support is needed for the JavaScript checks. From the repository root:
+
+```powershell
+dotnet build MonitorRemote.csproj
+dotnet build desktop/MonitorRemote.Desktop.csproj
+```
+
+Run `dotnet run` for the console server, or build a portable Windows package with the packaging command below. The server prints a phone URL and pairing code. Viewing, input and audio permissions require explicit opt-in; see Network and packaging for the console flags.
+
+Generated `artifacts` and the older local `App` folder are ignored and are not included in a source clone. This repository has no published GitHub release at the time of this documentation update. Recreate a package locally rather than treating workspace artifact paths as downloads.
 
 ## Run the Windows app
 
-Open the new package folder under `artifacts` and double-click `MonitorRemote.Desktop.exe`. If this README is inside a package, use the executable beside it. Keep the whole folder together, including its DLLs and `server` folder. The self-contained Windows x64 package requires no SDK or terminal. The existing workspace `App` folder contains the earlier brightness/power release.
+After packaging, open the new folder under `artifacts` and double-click `MonitorRemote.Desktop.exe`. If this README is inside a package, use the executable beside it. Keep the whole folder together, including its DLLs and `server` folder. The self-contained Windows x64 package requires no SDK or terminal. An existing local `App` folder, if present, contains the earlier brightness/power release.
 
 The server starts automatically. Scan the PC app's QR with iPhone Camera and enter the six-digit pairing code in Safari within ten minutes. Keep the PC awake and the app running; Ethernet on the PC and Wi-Fi on the phone work on the same reachable network.
 
@@ -82,4 +144,26 @@ dotnet tests/bin/Debug/net10.0/MonitorRemote.Checks.dll
 
 Automated remote/audio checks use synthetic frames, input and devices. They do not capture the real desktop, inject real mouse/keyboard input or change real audio. `--read-audio` on the checks executable separately enumerates actual Windows audio devices read only. The packaged launcher `--check` uses demo mode; set `MONITOR_CHECK_REPORT` to a report path before running it.
 
-See `docs/VALIDATION.md` in the source workspace for performed checks. Test actual iPhone Safari gestures, portrait/landscape, native keyboard resizing, Wi-Fi loss, lock/UAC, display/DPI changes, real typing and speaker/microphone readback on your setup. ARM64, real Safari/native-hardware acceptance and measured latency remain unverified.
+The [validation record](docs/VALIDATION.md) reports 42 synthetic remote/audio checks and 21 packaged launcher checks passing on 3 October 2026, alongside the JavaScript checks and demo browser QA. These are dated project results, not a fresh hardware acceptance claim from this documentation update.
+
+Test actual iPhone Safari gestures, portrait/landscape, native keyboard resizing, Wi-Fi loss, lock/UAC, display/DPI changes, real typing and speaker/microphone readback on your setup. ARM64, real Safari/native-hardware acceptance and measured latency remain unverified.
+
+## Source map and further reading
+
+| Path | Responsibility |
+| --- | --- |
+| [Program.cs](Program.cs), [PairingState.cs](PairingState.cs) | Hosting, API protection, pairing and session tokens |
+| [LocalManagement.cs](LocalManagement.cs), [ManagementProtocol.cs](ManagementProtocol.cs) | Launcher-to-server management |
+| [Hardware.cs](Hardware.cs) | Native brightness/power and demo workers |
+| [Remote](Remote) | Display discovery, capture, input and session lifecycle |
+| [Audio](Audio) | Core Audio interop, device catalog, readback and routes |
+| [desktop](desktop) | Windows launcher, tray, QR, preferences and process ownership |
+| [wwwroot](wwwroot) | Phone interface and request/connection state |
+| [tests](tests) | Synthetic API, frontend, remote/audio and launcher checks |
+| [package.ps1](package.ps1) | Portable Windows packaging |
+
+Read the [developer guide](docs/DEVELOPER_GUIDE.md) for implementation details and the [remote desktop design](docs/REMOTE_DESKTOP_IMPLEMENTATION.md) for capture, input and audio behavior. The Markdown developer guide is current; the checked-in PDF predates the remote/audio extension. [Project state](docs/PROJECT_STATE.md) records delivery context and remaining acceptance work. Developer links and the demo image refer to the source repository; the portable package retains these operating instructions without the `docs` folder.
+
+## Licensing
+
+Third-party dependency licenses are recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The repository currently has no project-level license file; those dependency notices do not grant a license to this project's own code.
