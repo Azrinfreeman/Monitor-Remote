@@ -1,10 +1,20 @@
 # Project state
 
-Saved: 2026-10-03 (Asia/Kuala_Lumpur)
+Saved: 2026-10-05 (Asia/Kuala_Lumpur)
 Project: Monitor Remote
 Repository: https://github.com/Azrinfreeman/Monitor-Remote
 Visibility: private
 Default branch: main
+
+## Portfolio documentation follow-up — 2026-10-05
+
+The user selected another repository for conservative portfolio work while AgentDesk development continues. Monitor Remote is inspected in an isolated checkout; base commit `8c62208af59c0bf017751ac40ef2e730c555561b`, branch `docs/monitor-remote-portfolio-2026-10-05`.
+
+README additions explain the product, implemented features, architecture, engineering choices, source setup and source map. The existing synthetic demo image is labeled as such. Package/run, touch/typing, audio, display and network instructions remain in the README because `package.ps1` copies it into the portable package without `docs`. Generated local artifacts are distinguished from source-clone contents. Historical test results retain their date and acceptance limits; no project license or download release is invented.
+
+Documentation checks pass: 17 local links resolve, all four original command blocks and four detailed operating sections are preserved, packaged pairing/permission instructions and synthetic-check boundaries are retained, and the diff has no whitespace errors. Architecture claims were checked against the hosting, pairing, session, capture, audio and launcher source; the existing demo image was visually inspected. Historical application results are not rerun or relabeled as fresh results for this Markdown-only change.
+
+Only README and this state note change. Application source, tests, dependency and packaging files, repository name and private visibility are preserved. No real screen capture/input/audio change, firewall/startup change or release build is part of this pass. Required documentation work: none after final branch checks. Next: review the draft documentation PR before deciding to merge; publication, licensing and real-device acceptance remain separate decisions.
 
 ## Current milestone
 
