@@ -3,7 +3,7 @@
 Saved: 2026-10-05 (Asia/Kuala_Lumpur)
 Project: Monitor Remote
 Repository: https://github.com/Azrinfreeman/Monitor-Remote
-Visibility: private
+Visibility: current GitHub repository settings are authoritative
 Default branch: main
 
 ## Portfolio documentation follow-up — 2026-10-05
@@ -14,7 +14,9 @@ README additions explain the product, implemented features, architecture, engine
 
 Documentation checks pass: 17 local links resolve, all four original command blocks and four detailed operating sections are preserved, packaged pairing/permission instructions and synthetic-check boundaries are retained, and the diff has no whitespace errors. Architecture claims were checked against the hosting, pairing, session, capture, audio and launcher source; the existing demo image was visually inspected. Historical application results are not rerun or relabeled as fresh results for this Markdown-only change.
 
-Only README and this state note change. Application source, tests, dependency and packaging files, repository name and private visibility are preserved. No real screen capture/input/audio change, firewall/startup change or release build is part of this pass. Required documentation work: none after final branch checks. Next: review the draft documentation PR before deciding to merge; publication, licensing and real-device acceptance remain separate decisions.
+Only README and this state note change. Application source, tests, dependency and packaging files and repository name are preserved. No real screen capture/input/audio change, firewall/startup change or release build is part of this pass. Required documentation work: none after final branch checks. Licensing and real-device acceptance remain separate decisions.
+
+The user subsequently approved merging the documentation PR and making this repository public. The publication review inspected both reachable commits, 59 Git blobs and the extracted text of the 19-page developer-guide PDF; targeted credential patterns and personal-path/email checks found no candidates. The existing screenshot is synthetic and third-party notices remain intact. This review is not a full application security audit. Next delivery steps: merge the verified documentation PR, apply the authorized public visibility setting and confirm the result on GitHub. GitHub records the final merge/publication status; no AgentDesk work is included.
 
 ## Current milestone
 
