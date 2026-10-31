@@ -6,6 +6,11 @@ sealed class Preferences {
     public bool CloseExplained { get; set; }
     public int Port { get; set; } = 8765;
     public string? Address { get; set; }
+    public string? TlsCertificatePath { get; set; }
+    public string? TlsCertificatePassword { get; set; }
+    public int TlsPort { get; set; } = 8766;
+    public bool AllowPlainHttp { get; set; } = true;
+    public string? AllowedHosts { get; set; }
     static string FilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MonitorRemote", "desktop.json");
     public static Preferences Load() {
         try {

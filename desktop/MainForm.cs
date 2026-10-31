@@ -155,7 +155,7 @@ sealed class MainForm : Form {
     async Task Start() {
         status.Text = "Starting…";
         if (!server.Running) activePort = prefs.Port;
-        Apply(await server.Start(activePort));
+        Apply(await server.Start(activePort, prefs));
         Log("Server ready on port " + activePort + ".");
     }
     async Task Stop() {
@@ -214,7 +214,8 @@ sealed class MainForm : Form {
         UpdateUrl(); UpdateControls();
     }
     void UpdateUrl() {
-        var text = ready && addresses.SelectedItem is AddressChoice choice ? $"http://{choice.Address}:{activePort}" : "";
+        var secureHost = string.IsNullOrWhiteSpace(prefs.TlsCertificatePath) ? null : prefs.AllowedHosts?.Split([',', ';', ' '], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        var text = !ready ? "" : secureHost != null ? $"https://{secureHost}:{prefs.TlsPort}" : addresses.SelectedItem is AddressChoice choice ? $"http://{choice.Address}:{activePort}" : "";
         if (url.Text == text) return;
         url.Text = text;
         qr.Image?.Dispose(); qr.Image = null;

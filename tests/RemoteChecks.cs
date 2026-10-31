@@ -149,6 +149,10 @@ await using (var fixture = await Fixture.Start(serverPath)) {
     var ended = JsonSerializer.Deserialize<JsonElement>(await Fixture.ReceiveBytes(oversized));
     Check(ended.GetProperty("type").GetString() == "ended" && !(await fixture.Management("status")).RemoteState!.Contains("active"), "oversized control message terminates its session");
 }
+var tlsOff = new TlsSettings(_ => null);
+Check(!tlsOff.Enabled && tlsOff.AllowPlainHttp && tlsOff.HostAllowed("192.168.1.5") && tlsOff.HostAllowed("localhost") && !tlsOff.HostAllowed("8.8.8.8") && !tlsOff.HostAllowed("phone.ts.net"), "TLS off keeps the private-address host rule");
+var tlsHosts = new TlsSettings(k => k == "MONITOR_ALLOWED_HOSTS" ? "Phone.Example.ts.net, bad!host" : null);
+Check(tlsHosts.HostAllowed("phone.example.ts.net") && !tlsHosts.HostAllowed("evil.example") && tlsHosts.AllowedHosts.Length == 1, "Allowed hostnames are explicit and validated");
 Console.WriteLine($"PASS: {checks} checks. No real desktop capture, input injection or audio changes.");
 
 sealed class CheckClock : TimeProvider { public DateTimeOffset Now = DateTimeOffset.UtcNow; public override DateTimeOffset GetUtcNow() => Now; }

@@ -10,7 +10,7 @@ sealed class ServerController : IDisposable {
     public event Action? Exited;
     internal string PipeName => pipe;
     public string ServerPath => Path.Combine(AppContext.BaseDirectory, "server", "MonitorRemote.exe");
-    public async Task<ManagementReply> Start(int port) {
+    public async Task<ManagementReply> Start(int port, Preferences? prefs = null) {
         if (Running) return await Send("status");
         Dispose();
         if (!File.Exists(ServerPath)) throw new FileNotFoundException("Bundled server missing. Run package.ps1 and launch the packaged desktop app.", ServerPath);
@@ -23,6 +23,13 @@ sealed class ServerController : IDisposable {
         info.ArgumentList.Add("--contentRoot");
         info.ArgumentList.Add(Path.GetDirectoryName(ServerPath)!);
         info.Environment["MONITOR_PORT"] = port.ToString();
+        if (!string.IsNullOrWhiteSpace(prefs?.TlsCertificatePath)) {
+            info.Environment["MONITOR_TLS_CERT"] = prefs.TlsCertificatePath;
+            info.Environment["MONITOR_TLS_PASSWORD"] = prefs.TlsCertificatePassword ?? "";
+            info.Environment["MONITOR_TLS_PORT"] = prefs.TlsPort.ToString();
+            info.Environment["MONITOR_ALLOW_HTTP"] = prefs.AllowPlainHttp ? "1" : "0";
+        }
+        if (!string.IsNullOrWhiteSpace(prefs?.AllowedHosts)) info.Environment["MONITOR_ALLOWED_HOSTS"] = prefs.AllowedHosts;
         info.Environment["MONITOR_MANAGEMENT_PIPE"] = pipe;
         info.Environment["MONITOR_MANAGEMENT_SECRET"] = secret;
         // The child waits for job assignment before it can create workers.

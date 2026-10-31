@@ -15,9 +15,13 @@ if (launchGate != null) {
 }
 var permissionArguments = new[] { "--allow-viewing", "--allow-input", "--allow-audio" };
 var builder = WebApplication.CreateBuilder(args.Where(a => !permissionArguments.Contains(a)).ToArray());
-builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 65536);
 var port = int.TryParse(Environment.GetEnvironmentVariable("MONITOR_PORT"), out var p) ? p : 8765;
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+var tls = new TlsSettings(Environment.GetEnvironmentVariable);
+builder.WebHost.ConfigureKestrel(options => {
+    options.Limits.MaxRequestBodySize = 65536;
+    if (!tls.Enabled || tls.AllowPlainHttp) options.ListenAnyIP(port);
+    if (tls.Enabled) options.ListenAnyIP(tls.Port, listen => listen.UseHttps(https => https.ServerCertificateSelector = (_, _) => tls.Certificate()));
+});
 var app = builder.Build();
 var pairing = new PairingState();
 using var remote = new RemoteSessionManager(pairing, args.Contains("--allow-viewing"), args.Contains("--allow-input"), args.Contains("--allow-audio"));
@@ -27,17 +31,19 @@ var gate = new SemaphoreSlim(1);
 var pipeName = Environment.GetEnvironmentVariable("MONITOR_MANAGEMENT_PIPE");
 var pipeSecret = Environment.GetEnvironmentVariable("MONITOR_MANAGEMENT_SECRET");
 if (pipeName == null) Console.WriteLine($"Pairing code: {pairing.Status().Code} (valid for 10 minutes). Restart to revoke sessions / generate a new code.");
-foreach (var ip in Dns.GetHostAddresses(Dns.GetHostName()).Where(x => x.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)) Console.WriteLine($"Phone URL: http://{ip}:{port}");
+foreach (var ip in Dns.GetHostAddresses(Dns.GetHostName()).Where(x => x.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)) { if (!tls.Enabled || tls.AllowPlainHttp) Console.WriteLine($"Phone URL: http://{ip}:{port}"); if (tls.Enabled) Console.WriteLine($"Phone URL: https://{ip}:{tls.Port}"); }
 app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(1), KeepAliveTimeout = TimeSpan.FromSeconds(3) });
 app.Use(async (ctx, next) => {
     ctx.Response.Headers["Cache-Control"] = "no-store";
     ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
     var host = ctx.Request.Host.Host;
-    if (!(IPAddress.TryParse(host, out var address) && (IPAddress.IsLoopback(address) || address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && (host.StartsWith("192.168.") || host.StartsWith("10.") || address.GetAddressBytes()[0] == 172 && address.GetAddressBytes()[1] is >= 16 and <= 31))) && host != "localhost") { ctx.Response.StatusCode = 403; return; }
-    ctx.Response.Headers["Content-Security-Policy"] = $"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' ws://{ctx.Request.Host}; frame-ancestors 'none'";
+    if (!tls.HostAllowed(host)) { ctx.Response.StatusCode = 403; return; }
+    var secure = ctx.Request.IsHttps;
+    var origin = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
+    ctx.Response.Headers["Content-Security-Policy"] = $"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' {(secure ? "wss" : "ws")}://{ctx.Request.Host}; frame-ancestors 'none'";
     var upgrade = ctx.WebSockets.IsWebSocketRequest && (ctx.Request.Path == "/api/remote/frames" || ctx.Request.Path == "/api/remote/control");
-    if (ctx.WebSockets.IsWebSocketRequest && (!upgrade || ctx.Request.Headers.Origin != $"http://{ctx.Request.Host}")) { ctx.Response.StatusCode = 403; return; }
-    if (!upgrade && ctx.Request.Method != "GET" && (ctx.Request.Headers.Origin != $"http://{ctx.Request.Host}" || ctx.Request.Headers["X-Monitor-Request"] != "1")) { ctx.Response.StatusCode = 403; return; }
+    if (ctx.WebSockets.IsWebSocketRequest && (!upgrade || ctx.Request.Headers.Origin != origin)) { ctx.Response.StatusCode = 403; return; }
+    if (!upgrade && ctx.Request.Method != "GET" && (ctx.Request.Headers.Origin != origin || ctx.Request.Headers["X-Monitor-Request"] != "1")) { ctx.Response.StatusCode = 403; return; }
     if (ctx.Request.Path.StartsWithSegments("/api") && ctx.Request.Path != "/api/pair" && (!ctx.Request.Cookies.TryGetValue("session", out var token) || !pairing.Valid(token))) { ctx.Response.StatusCode = 401; return; }
     await next();
 });
@@ -46,7 +52,7 @@ app.MapPost("/api/pair", (HttpContext ctx, Pair input) => {
     var key = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     var result = pairing.Pair(key, input.Code, out var token);
     if (result != 200) return Results.StatusCode(result);
-    ctx.Response.Cookies.Append("session", token!, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, MaxAge = TimeSpan.FromHours(12), IsEssential = true });
+    ctx.Response.Cookies.Append("session", token!, new CookieOptions { HttpOnly = true, Secure = ctx.Request.IsHttps, SameSite = SameSiteMode.Strict, MaxAge = TimeSpan.FromHours(12), IsEssential = true });
     return Results.Ok(new { paired = true });
 });
 app.MapPost("/api/logout", (HttpContext ctx) => { if (ctx.Request.Cookies.TryGetValue("session", out var token)) pairing.Logout(token); ctx.Response.Cookies.Delete("session"); return Results.Ok(); });
