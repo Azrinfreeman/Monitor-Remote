@@ -21,6 +21,19 @@
   });
   syncPaired();
 
+  // ---- a scanned QR code opens /#code=123456: fill the box and connect (the fragment never reaches the server)
+  let scannedCode = null;
+  const scanned = location.hash.match(/^#code=(\d{6})$/);
+  if (scanned) { scannedCode = scanned[1]; history.replaceState(null, '', location.pathname + location.search); }
+  function applyScannedCode(attempt = 0) {
+    if (!scannedCode) return;
+    if ($('pair').hidden) { if (attempt < 40) setTimeout(() => applyScannedCode(attempt + 1), 250); else scannedCode = null; return; }
+    const value = scannedCode; $('code').value = value; $('code').dispatchEvent(new Event('input'));
+    $('pair-hint').hidden = false;
+    // Short pause so the digits are seen filling in, then connect once the page is idle.
+    const submit = tries => { if ($('connect').disabled && tries < 20) { setTimeout(() => submit(tries + 1), 150); return; } scannedCode = null; $('pair').requestSubmit(); };
+    setTimeout(() => submit(0), 450);
+  }
   // ---- pairing screen: digit cells, waiting, error, success
   const pair = $('pair'), cells = [...document.querySelectorAll('.code-cells span')], code = $('code');
   let submitted = false;
@@ -46,6 +59,7 @@
     submitted = false; pair.dataset.success = 'true'; setTimeout(() => { delete pair.dataset.success; }, 600);
   }
   setInterval(() => { if (!pair.hidden) syncCells(); }, 200);
+  applyScannedCode();
 
   // ---- slider fill (--p) follows the value
   const rangeFill = input => {

@@ -27,6 +27,7 @@ public sealed partial class MainWindow : Window {
     bool busy, exiting, ready, applyingPermissions, remoteActive, approving, soundActive, shown;
     int activePort;
     DateTimeOffset? expires;
+    string pairingCode = "", shownQr = "";
 
     public MainWindow() {
         InitializeComponent();
@@ -157,7 +158,8 @@ public sealed partial class MainWindow : Window {
     void Apply(ManagementReply reply) {
         ready = reply.Running;
         SetStatus(ready ? "Running" : "Stopped", ready ? Green : Gray);
-        CodeText.Text = reply.Code is { Length: 6 } c ? c[..3] + " " + c[3..] : "—";
+        pairingCode = reply.Code is { Length: 6 } c ? c : "";
+        CodeText.Text = pairingCode.Length == 6 ? pairingCode[..3] + " " + pairingCode[3..] : "—";
         expires = reply.Expires;
         applyingPermissions = true;
         ViewingToggle.IsOn = reply.AllowViewing; InputToggle.IsOn = reply.AllowInput; AudioToggle.IsOn = reply.AllowAudio; SoundToggle.IsOn = reply.AllowSound;
@@ -192,7 +194,7 @@ public sealed partial class MainWindow : Window {
         finally { approving = false; }
     }
     void Clear() {
-        ready = false; expires = null; CodeText.Text = "—"; ExpiryText.Text = ""; UrlBox.Text = ""; QrImage.Opacity = 0; QrImage.Source = null;
+        ready = false; expires = null; pairingCode = ""; shownQr = ""; CodeText.Text = "—"; ExpiryText.Text = ""; UrlBox.Text = ""; QrImage.Opacity = 0; QrImage.Source = null;
         applyingPermissions = true; ViewingToggle.IsOn = InputToggle.IsOn = AudioToggle.IsOn = SoundToggle.IsOn = false; applyingPermissions = false;
         remoteActive = false; soundActive = false; SessionText.Text = "Idle"; RemoteStatus.Text = "Remote viewing idle"; tray.SetTip("Monitor Remote");
     }
@@ -226,10 +228,13 @@ public sealed partial class MainWindow : Window {
     void UpdateUrl() {
         var secureHost = string.IsNullOrWhiteSpace(prefs.TlsCertificatePath) ? null : prefs.AllowedHosts?.Split([',', ';', ' '], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
         var text = !ready ? "" : secureHost != null ? $"https://{secureHost}:{prefs.TlsPort}" : AddressBox.SelectedItem is AddressChoice choice ? $"http://{choice.Address}:{activePort}" : "";
-        if (UrlBox.Text == text) return;
-        UrlBox.Text = text;
-        if (text.Length == 0) { QrImage.Opacity = 0; QrImage.Source = null; return; }
-        _ = ShowQr(text);
+        if (UrlBox.Text != text) UrlBox.Text = text;
+        // The QR carries the current pairing code in the URL fragment (never sent to the server), so scanning fills the code box.
+        var payload = text.Length == 0 ? "" : pairingCode.Length == 6 ? text + "#code=" + pairingCode : text;
+        if (payload == shownQr) return;
+        shownQr = payload;
+        if (payload.Length == 0) { QrImage.Opacity = 0; QrImage.Source = null; return; }
+        _ = ShowQr(payload);
     }
     async Task ShowQr(string text) {
         using var data = QRCodeGenerator.GenerateQrCode(text, QRCodeGenerator.ECCLevel.Q);
@@ -239,7 +244,7 @@ public sealed partial class MainWindow : Window {
         stream.Seek(0);
         var image = new BitmapImage();
         await image.SetSourceAsync(stream);
-        if (UrlBox.Text != text) return;
+        if (shownQr != text) return;
         QrImage.Source = image; QrImage.Opacity = 1;
     }
     void OpenController() {
