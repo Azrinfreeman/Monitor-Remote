@@ -30,7 +30,7 @@ sealed class MainForm : Form {
     readonly ToolStripMenuItem trayStart = new("Start server"), trayStop = new("Stop server");
     readonly ToolStripMenuItem trayRemoteStop = new("Stop remote session");
     readonly System.Windows.Forms.Timer timer = new() { Interval = 1000 };
-    bool busy, exiting, ready, applyingPermissions, remoteActive;
+    bool busy, exiting, ready, applyingPermissions, remoteActive, approving;
     int activePort;
     DateTimeOffset? expires;
     record AddressChoice(string Address, string Name) { public override string ToString() => Name + " — " + Address; }
@@ -181,6 +181,14 @@ sealed class MainForm : Form {
         remoteStatus.Text = (reply.RemoteState ?? "Idle") + (reply.DisplayName == null ? "" : " · " + reply.DisplayName);
         tray.Text = "Monitor Remote · " + (reply.RemoteState ?? "Idle");
         UpdateUrl();
+        if (reply.Pending is { Length: > 0 } && !approving) { approving = true; _ = Approve(reply.Pending[0]); }
+    }
+    async Task Approve(PendingPairing request) {
+        try {
+            var answer = MessageBox.Show(this, $"A device outside your home network wants to control this PC.{Environment.NewLine}{Environment.NewLine}Address: {request.Address}{Environment.NewLine}Device: {request.Label}{Environment.NewLine}{Environment.NewLine}Approve only if this is you.", "Approve connection?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+            try { Apply(await server.Send((answer == DialogResult.Yes ? "approve:" : "deny:") + request.Id)); Log((answer == DialogResult.Yes ? "Approved" : "Denied") + " remote device " + request.Address + "."); }
+            catch (IOException) { Log("Approval request expired."); }
+        } finally { approving = false; }
     }
     void Clear() {
         ready = false; expires = null; pairing.Text = "Pairing code: —"; expiry.Text = ""; url.Clear();

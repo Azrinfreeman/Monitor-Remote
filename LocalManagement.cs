@@ -5,6 +5,7 @@ using System.Text;
 static class LocalManagement {
     public static async Task Run(WebApplication app, PairingState pairing, RemoteSessionManager remote, string name, string secret) {
         ManagementReply Renew(bool revoke) { pairing.Renew(revoke); return remote.Status(); }
+        ManagementReply Managed(string command) { var reply = remote.Manage(command); if (reply.Error == null) AuditLog.Write("manage " + command); return reply; }
         var stopping = app.Lifetime.ApplicationStopping;
         while (!stopping.IsCancellationRequested) {
             try {
@@ -22,7 +23,9 @@ static class LocalManagement {
                         "renew" => Renew(false),
                         "revoke" => Renew(true),
                         "shutdown" => new ManagementReply(1, false),
-                        _ => remote.Manage(request.Command)
+                        var c when c.StartsWith("approve:") || c.StartsWith("deny:") => pairing.Decide(c[(c.IndexOf(':') + 1)..], c.StartsWith("approve:")) ? remote.Status() : remote.Status() with { Error = "Request expired or already decided." },
+                        var c when c.StartsWith("session:revoke:") => pairing.RevokeSession(c["session:revoke:".Length..]) ? remote.Status() : remote.Status() with { Error = "Session not found." },
+                        _ => Managed(request.Command)
                     };
                 await ManagementProtocol.Write(pipe, reply, timeout.Token);
                 if (authorized && request.Command == "shutdown") app.Lifetime.StopApplication();

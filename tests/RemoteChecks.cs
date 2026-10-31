@@ -149,6 +149,24 @@ await using (var fixture = await Fixture.Start(serverPath)) {
     var ended = JsonSerializer.Deserialize<JsonElement>(await Fixture.ReceiveBytes(oversized));
     Check(ended.GetProperty("type").GetString() == "ended" && !(await fixture.Management("status")).RemoteState!.Contains("active"), "oversized control message terminates its session");
 }
+Check(PairingState.IsLan(System.Net.IPAddress.Parse("192.168.1.9")) && PairingState.IsLan(System.Net.IPAddress.Loopback) && !PairingState.IsLan(System.Net.IPAddress.Parse("100.64.1.2")) && !PairingState.IsLan(System.Net.IPAddress.Parse("8.8.8.8")), "Tailnet and public peers are not treated as LAN");
+var events = new List<string>();
+var remotePairing = new PairingState(clock, events.Add);
+Check(remotePairing.PairRemote("100.64.1.2", "000000", "phone", out _) == 401, "Remote wrong code is rejected");
+Check(remotePairing.PairRemote("100.64.1.2", remotePairing.Status().Code!, "phone", out var requestId) == 202 && requestId != null, "Remote correct code only opens an approval request");
+Check(remotePairing.Poll(requestId!, "100.64.1.2", out var early) == 202 && early == null, "Remote client waits while unapproved");
+Check(remotePairing.Poll(requestId!, "100.64.1.3", out _) == 404, "Approval request is bound to the requesting address");
+string? remoteToken = null;
+Check(remotePairing.Decide(requestId!, true) && remotePairing.Poll(requestId!, "100.64.1.2", out remoteToken) == 200 && remotePairing.Valid(remoteToken!), "Approval issues a session once");
+Check(remotePairing.Poll(requestId!, "100.64.1.2", out _) == 404, "Approved request cannot be reused");
+var view = remotePairing.Status().Sessions!.Single();
+Check(view.Remote && view.Expires - view.Started == PairingState.RemoteLifetime, "Remote sessions use the shorter lifetime");
+Check(remotePairing.RevokeSession(view.Id) && !remotePairing.Valid(remoteToken!), "Single session revoke works");
+remotePairing.PairRemote("100.64.9.9", remotePairing.Status().Code!, "x", out var denyId);
+Check(remotePairing.Decide(denyId!, false) && remotePairing.Poll(denyId!, "100.64.9.9", out _) == 403, "Denied request is refused");
+for (var i = 0; i < 5; i++) remotePairing.PairRemote("100.64.7.7", "000000", "x", out _);
+Check(remotePairing.PairRemote("100.64.7.7", remotePairing.Status().Code!, "x", out _) == 429, "Remote pairing locks out after five failures");
+Check(events.Any(e => e.StartsWith("approved")) && events.Any(e => e.StartsWith("denied")) && !events.Any(e => e.Contains(remoteToken!)), "Audit records decisions and no tokens");
 var tlsOff = new TlsSettings(_ => null);
 Check(!tlsOff.Enabled && tlsOff.AllowPlainHttp && tlsOff.HostAllowed("192.168.1.5") && tlsOff.HostAllowed("localhost") && !tlsOff.HostAllowed("8.8.8.8") && !tlsOff.HostAllowed("phone.ts.net"), "TLS off keeps the private-address host rule");
 var tlsHosts = new TlsSettings(k => k == "MONITOR_ALLOWED_HOSTS" ? "Phone.Example.ts.net, bad!host" : null);

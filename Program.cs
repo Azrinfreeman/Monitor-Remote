@@ -23,7 +23,7 @@ builder.WebHost.ConfigureKestrel(options => {
     if (tls.Enabled) options.ListenAnyIP(tls.Port, listen => listen.UseHttps(https => https.ServerCertificateSelector = (_, _) => tls.Certificate()));
 });
 var app = builder.Build();
-var pairing = new PairingState();
+var pairing = new PairingState(audit: AuditLog.Write);
 using var remote = new RemoteSessionManager(pairing, args.Contains("--allow-viewing"), args.Contains("--allow-input"), args.Contains("--allow-audio"));
 using var audio = new AudioControlService();
 app.Lifetime.ApplicationStopping.Register(() => remote.Manage("remote:stop"));
@@ -44,17 +44,29 @@ app.Use(async (ctx, next) => {
     var upgrade = ctx.WebSockets.IsWebSocketRequest && (ctx.Request.Path == "/api/remote/frames" || ctx.Request.Path == "/api/remote/control");
     if (ctx.WebSockets.IsWebSocketRequest && (!upgrade || ctx.Request.Headers.Origin != origin)) { ctx.Response.StatusCode = 403; return; }
     if (!upgrade && ctx.Request.Method != "GET" && (ctx.Request.Headers.Origin != origin || ctx.Request.Headers["X-Monitor-Request"] != "1")) { ctx.Response.StatusCode = 403; return; }
-    if (ctx.Request.Path.StartsWithSegments("/api") && ctx.Request.Path != "/api/pair" && (!ctx.Request.Cookies.TryGetValue("session", out var token) || !pairing.Valid(token))) { ctx.Response.StatusCode = 401; return; }
+    if (ctx.Request.Path.StartsWithSegments("/api") && !ctx.Request.Path.StartsWithSegments("/api/pair") && (!ctx.Request.Cookies.TryGetValue("session", out var token) || !pairing.Valid(token))) { ctx.Response.StatusCode = 401; return; }
     await next();
 });
 app.UseDefaultFiles(); app.UseStaticFiles();
 app.MapPost("/api/pair", (HttpContext ctx, Pair input) => {
     var key = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-    var result = pairing.Pair(key, input.Code, out var token);
+    var label = ctx.Request.Headers.UserAgent.ToString();
+    if (!PairingState.IsLan(ctx.Connection.RemoteIpAddress)) {
+        var pendingResult = pairing.PairRemote(key, input.Code, label, out var requestId);
+        return pendingResult == 202 ? Results.Json(new { pending = true, id = requestId }, statusCode: 202) : Results.StatusCode(pendingResult);
+    }
+    var result = pairing.Pair(key, input.Code, out var token, label);
     if (result != 200) return Results.StatusCode(result);
-    ctx.Response.Cookies.Append("session", token!, new CookieOptions { HttpOnly = true, Secure = ctx.Request.IsHttps, SameSite = SameSiteMode.Strict, MaxAge = TimeSpan.FromHours(12), IsEssential = true });
-    return Results.Ok(new { paired = true });
+    return PairedResponse(ctx, token!, PairingState.LanLifetime);
 });
+app.MapPost("/api/pair/poll", (HttpContext ctx, Poll input) => {
+    var result = pairing.Poll(input.Id ?? "", ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown", out var token);
+    return result == 200 ? PairedResponse(ctx, token!, PairingState.RemoteLifetime) : result == 202 ? Results.Json(new { pending = true }, statusCode: 202) : Results.StatusCode(result);
+});
+IResult PairedResponse(HttpContext ctx, string token, TimeSpan lifetime) {
+    ctx.Response.Cookies.Append("session", token, new CookieOptions { HttpOnly = true, Secure = ctx.Request.IsHttps, SameSite = SameSiteMode.Strict, MaxAge = lifetime, IsEssential = true });
+    return Results.Ok(new { paired = true });
+}
 app.MapPost("/api/logout", (HttpContext ctx) => { if (ctx.Request.Cookies.TryGetValue("session", out var token)) pairing.Logout(token); ctx.Response.Cookies.Delete("session"); return Results.Ok(); });
 app.MapGet("/api/status", () => Results.Ok(new { online = true, simulated = Environment.GetEnvironmentVariable("MONITOR_DEMO") == "1", capabilities = remote.Capabilities() }));
 RemoteEndpoints.Map(app, remote);
@@ -89,5 +101,6 @@ var management = pipeName != null && !string.IsNullOrEmpty(pipeSecret) ? LocalMa
 await app.WaitForShutdownAsync();
 await management;
 record Pair(string Code);
+record Poll(string? Id);
 record Brightness(int Value);
 record Power(string State);

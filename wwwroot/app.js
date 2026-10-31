@@ -181,7 +181,20 @@ async function load() {
 $('pair').onsubmit = async event => {
   event.preventDefault(); if (pairing || loading || loggingOut) return;
   pairing = true; updateControls(); let success = false;
-  try { await api('pair', { code: $('code').value }); $('code').value = ''; success = true; }
+  try {
+    const first = await api('pair', { code: $('code').value }); $('code').value = '';
+    if (first.pending) {
+      $('status').textContent = 'Waiting for approval on your PC…';
+      let result = first;
+      for (let i = 0; i < 80 && result.pending; i++) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        try { result = await api('pair/poll', { id: first.id }); }
+        catch (error) { throw /\(40[34]\)/.test(error.message) ? Error('The PC did not approve this connection, or the request expired.') : error; }
+      }
+      if (result.pending) throw Error('No approval on the PC. Try again.');
+    }
+    success = true;
+  }
   catch (error) { report(error); }
   finally { pairing = false; updateControls(); }
   if (success) await load();
