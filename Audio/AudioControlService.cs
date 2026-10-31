@@ -42,6 +42,7 @@ sealed class AudioControlService : IDisposable {
     }
     public void Dispose() { queue.CompleteAdding(); thread.Join(1000); }
 }
+record AudioSessionResult(AudioSession? Session, bool Confirmed, string? Error, bool Simulated);
 record AudioChange(double? Value = null, bool? Muted = null, string? Revision = null, bool RequireDefault = false, string[]? DeviceIds = null);
 static class AudioEndpoints {
     public static void Map(WebApplication app, AudioControlService audio, RemoteSessionManager manager) {
@@ -77,9 +78,9 @@ static class AudioEndpoints {
                 try {
                     var actual = devices.SetSession(id, mute ? null : request.Value, mute ? request.Muted : null);
                     var confirmed = mute ? actual.Muted == request.Muted : actual.Volume.HasValue && Math.Abs(actual.Volume.Value - request.Value!.Value) <= 1;
-                    return new { session = actual, confirmed, error = confirmed ? null : "Requested setting differs from Windows readback.", simulated = snapshot.Simulated };
+                    return new AudioSessionResult(actual, confirmed, confirmed ? null : "Requested setting differs from Windows readback.", snapshot.Simulated);
                 } catch (Exception e) when (e is InvalidOperationException or COMException) {
-                    return new { session = (AudioSession?)null, confirmed = false, error = "The application rejected the change or its sound ended. Refresh applications.", simulated = snapshot.Simulated };
+                    return new AudioSessionResult(null, false, "The application rejected the change or its sound ended. Refresh applications.", snapshot.Simulated);
                 }
             }, ctx.RequestAborted));
         } catch (Exception e) when (e is FeatureException or InvalidOperationException or COMException or OperationCanceledException) { return FeatureApi.Error(e); }
