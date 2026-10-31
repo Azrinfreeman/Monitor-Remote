@@ -4,76 +4,113 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#101827">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Monitor Remote">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-180.png">
   <title>Monitor Remote</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="remote.css">
-  <link rel="stylesheet" href="audio.css">
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="components.css">
+  <link rel="stylesheet" href="shell.css">
+  <link rel="stylesheet" href="motion.css">
   <script src="app.js" defer></script>
   <script src="features.js" defer></script>
   <script src="remote.js" defer></script>
   <script src="audio.js" defer></script>
   <script src="apps.js" defer></script>
   <script src="listen.js" defer></script>
+  <script src="ui.js" defer></script>
 </head>
-<body>
+<body data-tab="monitors" data-paired="false">
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-display" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2.5"/><path d="M8 20h8M12 16v4"/></symbol>
+  <symbol id="i-desktop" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2.5"/><path d="M9 21h6M12 17v4"/><path d="M8 9.5l2.5 2L8 13.5M13 13.5h3"/></symbol>
+  <symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M7 14h10"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8M7.2 6.5a7.5 7.5 0 1 0 9.6 0"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></symbol>
+</svg>
+
+<div id="bar" class="bar glass" aria-hidden="true">Monitor Remote</div>
 <main>
-  <header><p class="eyebrow">HOME DISPLAY CONTROL</p><h1>Monitor Remote</h1>
-    <p id="status" class="connection" role="status" aria-live="polite" data-state="connecting">Connecting…</p>
+  <header class="large-title">
+    <h1>Monitor Remote</h1>
+    <button id="more" class="icon-button" aria-label="Connection options" aria-haspopup="dialog" aria-controls="more-sheet"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button>
+    <p id="status" class="status" role="status" aria-live="polite" data-state="connecting">Connecting…</p>
     <button id="retry-connection" class="secondary" hidden>Reconnect</button>
   </header>
-  <form id="pair" hidden>
+
+  <form id="pair" class="pairing" hidden>
+    <div class="app-mark" aria-hidden="true"><svg class="icon"><use href="#i-display"/></svg></div>
     <h2>Connect to your PC</h2>
-    <label for="code">Six-digit code shown in the PC app</label>
-    <input id="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required placeholder="000000">
+    <label for="code">Enter the six-digit code shown in the PC app</label>
+    <div class="code-field">
+      <div class="code-cells" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <input id="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required placeholder="000000">
+    </div>
     <button id="connect">Connect</button>
   </form>
+
   <section id="controls" hidden aria-label="Monitor controls">
-    <div class="toolbar"><button id="refresh">Refresh readings</button><button id="logout">Disconnect</button></div>
-    <nav id="feature-tabs" class="feature-tabs" aria-label="PC controls" hidden>
-      <button id="tab-monitors" aria-pressed="true">Displays</button>
-      <button id="tab-desktop" aria-pressed="false">Desktop</button>
-      <button id="tab-audio" aria-pressed="false">Audio</button>
+    <nav id="feature-tabs" class="tabbar glass" aria-label="PC controls" hidden>
+      <button id="tab-monitors" class="tab" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="#i-display"/></svg>Displays</button>
+      <button id="tab-desktop" class="tab" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-desktop"/></svg>Desktop</button>
+      <button id="tab-audio" class="tab" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-speaker"/></svg>Audio</button>
+      <span class="tab-indicator" aria-hidden="true"></span>
     </nav>
+
     <div id="pane-monitors">
-    <p id="empty" hidden>No monitors detected. Check cables and refresh readings.</p>
-    <div id="monitors"></div>
-    <article>
-      <p class="eyebrow">POWER</p><h2>All displays</h2>
-      <p>The PC stays running. If wake needs help, use your keyboard or mouse.</p>
-      <div class="power-actions"><button id="wake">Wake displays</button><button id="off" class="secondary">Turn displays off</button></div>
-      <p id="power-status" class="monitor-note" role="status">Visible display state is unconfirmed.</p>
-    </article>
+      <p id="empty" hidden>No monitors detected. Check cables and refresh readings.</p>
+      <div id="monitors"></div>
+      <section class="list power-list" aria-label="Power">
+        <h2 class="group-title">Power</h2>
+        <div class="list-body">
+          <button id="wake" class="row-button">Wake displays<svg class="icon" aria-hidden="true"><use href="#i-sun"/></svg></button>
+          <button id="off" class="row-button danger">Turn displays off<svg class="icon" aria-hidden="true"><use href="#i-power"/></svg></button>
+        </div>
+        <p id="power-status" class="monitor-note group-foot" role="status">The PC stays running. Visible display state is unconfirmed.</p>
+      </section>
     </div>
+
     <section id="pane-desktop" hidden aria-label="Remote desktop">
-      <article>
-        <p class="eyebrow">YOUR PC SCREEN</p><h2>Remote desktop</h2>
+      <article id="remote-setup">
+        <h2>Remote desktop</h2>
         <p id="remote-note" role="status" aria-live="polite">Enable screen viewing in the PC app, then refresh displays.</p>
-        <div class="remote-selectors">
+        <div class="row-fields setup-fields">
           <label>Display<select id="remote-display" aria-label="Display to view"></select></label>
           <label>Quality<select id="remote-quality"><option value="balanced">Balanced</option><option value="clear">Clear text</option><option value="low">Low bandwidth</option></select></label>
         </div>
         <div class="remote-actions"><button id="remote-refresh" class="secondary">Refresh displays</button><button id="remote-start">Start viewing</button><button id="remote-stop" class="secondary" disabled>Stop viewing</button></div>
       </article>
       <div id="remote-stage" class="remote-stage" hidden>
-        <div class="viewer-wrap"><canvas id="remote-canvas" aria-label="Live PC screen"></canvas></div>
-        <p id="remote-frame-state" class="monitor-note" role="status">Waiting for a fresh frame…</p>
-        <div class="remote-actions">
-          <button id="remote-control" disabled>Enable control</button>
-          <button id="remote-expand" class="secondary">Expand view</button>
-          <button id="remote-fit" class="secondary">Fit screen</button>
-          <button id="remote-zoom-out" class="secondary" aria-label="Zoom out">−</button><button id="remote-zoom-in" class="secondary" aria-label="Zoom in">+</button>
+        <div class="viewer-wrap">
+          <canvas id="remote-canvas" aria-label="Live PC screen"></canvas>
+          <div class="viewer-bar" role="toolbar" aria-label="Viewer controls">
+            <button id="remote-control" disabled>Enable control</button>
+            <button id="remote-expand" class="secondary">Expand view</button>
+            <button id="remote-fit" class="secondary">Fit screen</button>
+            <button id="remote-zoom-out" class="secondary" aria-label="Zoom out">−</button><button id="remote-zoom-in" class="secondary" aria-label="Zoom in">+</button>
+          </div>
         </div>
-        <label>Touch mode<select id="remote-mode"><option value="touchpad">Touchpad</option><option value="direct">Direct touch</option></select></label>
+        <p id="remote-frame-state" class="monitor-note" role="status">Waiting for a fresh frame…</p>
+        <label class="visually-hidden" for="remote-mode">Touch mode</label>
+        <select id="remote-mode" class="visually-hidden"><option value="touchpad">Touchpad</option><option value="direct">Direct touch</option></select>
         <div id="remote-touchpad" class="touchpad" role="application" aria-label="Touchpad for the PC mouse"><span>Slide to move · Tap to click<br>Two fingers to scroll · Pinch screen to zoom</span></div>
         <div class="remote-actions">
-          <button id="remote-left" data-remote-input disabled>Left click</button><button id="remote-double" data-remote-input disabled>Double click</button>
-          <button id="remote-right" data-remote-input disabled>Right click</button><button id="remote-drag" data-remote-input aria-pressed="false" disabled>Drag</button>
+          <button id="remote-left" class="secondary" data-remote-input disabled>Left click</button><button id="remote-double" class="secondary" data-remote-input disabled>Double click</button>
+          <button id="remote-right" class="secondary" data-remote-input disabled>Right click</button><button id="remote-drag" class="secondary" data-remote-input aria-pressed="false" disabled>Drag</button>
         </div>
         <div id="remote-scroll" class="scroll-strip" aria-label="Slide to scroll">Slide here to scroll</div>
-        <p id="remote-gesture-help" class="monitor-note">Hold Drag while moving on the touchpad. In direct touch, enable Drag then touch and move on the screen. Long press for right click.</p>
+        <div id="remote-coach" class="coach" hidden><p id="remote-gesture-help">Hold Drag while moving on the touchpad. In direct touch, enable Drag then touch and move on the screen. Long press for right click.</p><button id="remote-coach-dismiss" class="plain">Got it</button></div>
         <details id="remote-keyboard">
-          <summary>Keyboard</summary>
+          <summary><svg class="icon" aria-hidden="true"><use href="#i-keyboard"/></svg>Keyboard</summary>
           <p class="monitor-note">Click the intended text field on your PC first.</p>
           <div class="remote-actions modifier-row"><button id="key-shift" data-remote-input aria-pressed="false" disabled>Shift</button><button id="key-ctrl" data-remote-input aria-pressed="false" disabled>Ctrl</button><button id="key-alt" data-remote-input aria-pressed="false" disabled>Alt</button></div>
           <div id="keyboard-keys" class="keyboard-grid" aria-label="On-screen keys"></div>
@@ -86,16 +123,22 @@
         </details>
       </div>
     </section>
+
     <section id="pane-audio" hidden aria-label="PC audio controls">
+      <article id="listen">
+        <h2>Listen on this phone</h2>
+        <div class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <button id="listen-toggle">Listen to PC sound</button>
+        <p id="listen-note" class="monitor-note" role="status">Enable Allow PC sound streaming in the PC app first. Everything the PC plays is sent, including notifications.</p>
+      </article>
       <article>
-        <p class="eyebrow">PC SOUND</p><h2>Volume &amp; audio devices</h2>
+        <h2>Volume &amp; audio devices</h2>
         <p id="audio-note" role="status" aria-live="polite">Enable audio volume control in the PC app, then refresh devices.</p>
         <button id="audio-refresh" class="secondary">Refresh devices</button>
       </article>
-      <article id="listen"><p class="eyebrow">LISTEN</p><h2>PC sound on this phone</h2><button id="listen-toggle">Listen to PC sound</button><p id="listen-note" class="monitor-note" role="status">Enable Allow PC sound streaming in the PC app first. Everything the PC plays is sent, including notifications.</p></article>
       <div id="audio-pc"></div>
       <article id="audio-all" hidden>
-        <p class="eyebrow">ALL PLAYBACK DEVICES</p><h2 id="audio-all-current">Mixed volume</h2>
+        <h2 id="audio-all-current">Mixed volume</h2>
         <label for="audio-all-value">Choose a volume for all outputs</label><input id="audio-all-value" type="range" min="0" max="100" value="50"><p id="audio-all-requested">Apply 50%</p>
         <div class="remote-actions"><button id="audio-all-apply">Apply to all</button><button id="audio-all-mute" class="secondary">Mute all</button><button id="audio-all-unmute" class="secondary">Unmute all</button></div>
         <p id="audio-all-note" class="monitor-note" role="status">Applies to currently available playback devices. Microphones keep their own settings.</p>
@@ -105,7 +148,14 @@
       <h2 id="apps-heading" hidden>Applications</h2><p id="apps-note" class="monitor-note" role="status"></p><button id="apps-refresh" class="secondary">Refresh applications</button><div id="apps-list"></div>
     </section>
   </section>
-  <p class="footnote">Keep your PC awake on the same Wi-Fi. Use this app on your trusted home network.</p>
+  <p class="footnote">Keep your PC awake and reachable. Use HTTPS or a private network away from home.</p>
 </main>
+
+<div id="scrim" class="scrim" hidden></div>
+<div id="more-sheet" class="sheet" role="dialog" aria-modal="true" aria-label="Connection options" hidden>
+  <span class="sheet-handle" aria-hidden="true"></span>
+  <h2>Connection</h2>
+  <div class="stack"><button id="refresh" class="secondary">Refresh readings</button><button id="logout" class="danger">Disconnect</button></div>
+</div>
 </body>
 </html>

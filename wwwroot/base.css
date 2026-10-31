@@ -1,0 +1,22 @@
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+body {
+  margin: 0; background: var(--bg); color: var(--label);
+  font: 17px/1.294 var(--font); letter-spacing: -.011em;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+}
+@supports (font: -apple-system-body) { body { font: -apple-system-body; font-family: var(--font); } }
+[hidden] { display: none !important; }
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: 2.125rem; line-height: 1.2; font-weight: 700; letter-spacing: -.022em; }
+h2 { font-size: 1.0625rem; line-height: 1.3; font-weight: 600; overflow-wrap: anywhere; }
+h3 { font-size: 1.0625rem; line-height: 1.3; font-weight: 600; overflow-wrap: anywhere; }
+p { color: var(--label-2); font-size: .9375rem; line-height: 1.33; }
+output { font-variant-numeric: tabular-nums; }
+label { display: block; }
+:focus { outline: none; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+::selection { background: var(--accent-tint); }
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.icon { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

@@ -1,0 +1,82 @@
+/* Design tokens. Raw colour values live only in this file. */
+:root {
+  color-scheme: light dark;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-rounded: ui-rounded, "SF Pro Rounded", var(--font);
+
+  /* Light appearance */
+  --bg: #f2f2f7;
+  --surface: #ffffff;
+  --surface-2: #f2f2f7;
+  --label: #000000;
+  --label-2: rgba(60, 60, 67, .76);
+  --label-3: rgba(60, 60, 67, .30);
+  --separator: rgba(60, 60, 67, .29);
+  --fill: rgba(120, 120, 128, .20);
+  --accent: #af52de;
+  --accent-text: #8944ab;
+  --accent-fill: #8944ab;
+  --on-accent: #ffffff;
+  --accent-tint: rgba(175, 82, 222, .14);
+  --success: #1e7b34;
+  --success-dot: #1f9d46;
+  --warning: #b25000;
+  --warning-dot: #d77900;
+  --danger: #d70015;
+  --danger-dot: #ff3b30;
+  --glass: rgba(249, 249, 249, .74);
+  --glass-solid: rgba(249, 249, 249, .92);
+  --scrim: rgba(0, 0, 0, .32);
+  --canvas: #0b0b0d;
+  --thumb: #ffffff;
+
+  --r-control: 12px;
+  --r-card: 16px;
+  --r-sheet: 22px;
+  --tap: 44px;
+
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  /* Springs sampled to linear(): smooth (response .5, damping 1), snappy (.3, .85), bouncy (.5, .7) */
+  --spring-smooth: linear(0, .05 2.3%, .19 5%, .38 8%, .58 11.4%, .75 15%, .88 19%, .96 24%, 1.0 30%, 1.01 38%, 1);
+  --spring-snappy: linear(0, .09 3%, .32 7%, .62 11.5%, .88 16%, 1.04 21%, 1.07 25%, 1.05 30%, 1.01 38%, .995 46%, 1);
+  --spring-bouncy: linear(0, .1 3%, .4 7%, .75 11%, 1.02 15%, 1.14 19%, 1.12 23%, 1.04 28%, .98 34%, 1.01 41%, 1);
+  --dur-press: 120ms;
+  --dur-ui: 220ms;
+  --dur-sheet: 340ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --label: #ffffff;
+    --label-2: rgba(235, 235, 245, .62);
+    --label-3: rgba(235, 235, 245, .30);
+    --separator: rgba(84, 84, 88, .60);
+    --fill: rgba(120, 120, 128, .36);
+    --accent: #bf5af2;
+    --accent-text: #d28dfa;
+    --accent-fill: #8944ab;
+    --on-accent: #ffffff;
+    --accent-tint: rgba(191, 90, 242, .20);
+    --success: #30d158;
+    --success-dot: #30d158;
+    --warning: #ff9f0a;
+    --warning-dot: #ff9f0a;
+    --danger: #ff6961;
+    --danger-dot: #ff453a;
+    --glass: rgba(28, 28, 30, .72);
+    --glass-solid: rgba(28, 28, 30, .92);
+    --scrim: rgba(0, 0, 0, .55);
+    --canvas: #050506;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --separator: currentColor;
+    --label-2: var(--label);
+    --glass: var(--surface);
+  }
+}

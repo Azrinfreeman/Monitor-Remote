@@ -1,0 +1,60 @@
+/* Motion: transform and opacity only. Frequent actions (typing, touchpad, sliders, live frames) are deliberately not animated. */
+button { transition: transform var(--dur-press) var(--ease-out), opacity var(--dur-press) var(--ease-out); }
+button:active:not(:disabled) { transform: scale(.97); }
+.row-button:active:not(:disabled) { transform: none; opacity: .6; }
+.tabbar button.tab:active:not(:disabled) { transform: scale(.94); }
+
+input[type=range]::-webkit-slider-thumb { transition: transform var(--dur-press) var(--ease-out); }
+input[type=range]:active::-webkit-slider-thumb { transform: scale(1.12); }
+input[type=range]::-moz-range-thumb { transition: transform var(--dur-press) var(--ease-out); }
+input[type=range]:active::-moz-range-thumb { transform: scale(1.12); }
+
+/* Tab bar indicator and segmented thumbs */
+.tabbar .tab-indicator { transition: transform .4s var(--spring-snappy), opacity var(--dur-ui) var(--ease-out); }
+.segmented .thumb { transition: transform .35s var(--spring-snappy); }
+
+/* Pane and card entrance (added by ui.js on first open of a pane) */
+@keyframes rise-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.pane-enter { animation: rise-in var(--dur-ui) var(--ease-out) backwards; }
+.reveal > * { animation: rise-in 260ms var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+.audio-card.enter, .remote-stage:not([hidden]) { animation: rise-in 280ms var(--ease-out) backwards; }
+
+/* Connection status */
+.status { position: relative; }
+.status::after { content: ''; position: absolute; left: 0; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%; border: 2px solid var(--success-dot); opacity: 0; pointer-events: none; }
+@keyframes ping { from { transform: scale(1); opacity: .6; } to { transform: scale(3); opacity: 0; } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+.status[data-state=connected]::after { animation: ping .9s var(--ease-out) 1; }
+.status[data-state=connecting]::before, .status[data-state=reconnecting]::before { animation: pulse 1.4s ease-in-out infinite; }
+
+/* Pairing */
+@keyframes pop { from { transform: scale(.88); } to { transform: scale(1); } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+@keyframes breathe { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.06); opacity: .7; } }
+@keyframes celebrate { from { transform: scale(.85); } to { transform: scale(1); } }
+.code-cells span[data-filled=true] { animation: pop 160ms var(--ease-out); }
+.pairing[data-error=true] .code-cells { animation: shake 300ms ease-in-out; }
+.pairing[data-waiting=true] .app-mark { animation: breathe 2s ease-in-out infinite; }
+.pairing[data-success=true] .app-mark { animation: celebrate .5s var(--spring-bouncy); }
+
+/* Sheets */
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.sheet:not([hidden]), details#remote-keyboard[open] { animation: sheet-up var(--dur-sheet) var(--spring-smooth) backwards; }
+.scrim:not([hidden]) { animation: fade-in var(--dur-ui) var(--ease-out) backwards; }
+.sheet.dragging, details#remote-keyboard.dragging { animation: none; transition: none; }
+.sheet.closing, details#remote-keyboard.closing { transition: transform 220ms var(--ease-out); }
+
+/* Viewer chrome */
+.viewer-wrap { transition: box-shadow var(--dur-ui) var(--ease-out); }
+.viewer-bar { transition: opacity var(--dur-ui) var(--ease-out); }
+body[data-expanded=true] .viewer-bar[data-idle=true] { opacity: 0; pointer-events: none; }
+.meter { transition: opacity var(--dur-ui) var(--ease-out); }
+.meter i { will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  button:active:not(:disabled), input[type=range]:active::-webkit-slider-thumb { transform: none; }
+  .status::after { display: none; }
+  .pane-enter, .reveal > *, .audio-card.enter, .remote-stage:not([hidden]) { animation: fade-in 100ms linear backwards; }
+}

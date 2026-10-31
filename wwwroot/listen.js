@@ -2,14 +2,22 @@
   const $ = id => document.getElementById(id), base = window.audioUI;
   const supported = typeof AudioDecoder === 'function' && typeof EncodedAudioChunk === 'function' && (window.AudioContext || window.webkitAudioContext);
   const JITTER = 0.1, MAX_AHEAD = 0.5;
-  let socket = null, context = null, decoder = null, nextTime = 0, listening = false;
+  let socket = null, context = null, decoder = null, nextTime = 0, listening = false, analyser = null;
+  const samples = new Uint8Array(128);
+  // Output level for the on-screen meter (0 to 1).
+  window.listenLevel = () => {
+    if (!analyser) return 0;
+    analyser.getByteTimeDomainData(samples);
+    let sum = 0; for (const v of samples) { const x = (v - 128) / 128; sum += x * x; }
+    return Math.sqrt(sum / samples.length);
+  };
   function note(text) { $('listen-note').textContent = text; }
-  function button() { $('listen-toggle').textContent = listening ? 'Stop listening' : 'Listen to PC sound'; $('listen-toggle').disabled = !supported; }
+  function button() { const card = $('listen'); if (card) card.dataset.live = String(listening); $('listen-toggle').textContent = listening ? 'Stop listening' : 'Listen to PC sound'; $('listen-toggle').disabled = !supported; }
   function stop(message) {
     const wasListening = listening; listening = false;
     if (socket) { socket.onclose = socket.onerror = socket.onmessage = null; try { socket.close(); } catch { /* already closed */ } socket = null; }
     if (decoder) { try { decoder.close(); } catch { /* already closed */ } decoder = null; }
-    if (context) { context.close().catch(() => {}); context = null; }
+    if (context) { context.close().catch(() => {}); context = null; analyser = null; }
     button();
     if (message) note(message); else if (wasListening) note('Stopped listening.');
   }
@@ -27,13 +35,14 @@
     if (nextTime < now + 0.02) nextTime = now + JITTER;
     if (nextTime - now > MAX_AHEAD) return;
     const source = context.createBufferSource();
-    source.buffer = buffer; source.connect(context.destination); source.start(nextTime); nextTime += buffer.duration;
+    source.buffer = buffer; source.connect(analyser || context.destination); source.start(nextTime); nextTime += buffer.duration;
   }
   function start() {
     if (!supported) { note('This browser cannot decode the sound stream. Update iOS to 26 or later.'); return; }
     // Creating and resuming the AudioContext inside the tap is what lets iOS play sound.
     context = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000, latencyHint: 'interactive' });
     context.resume().catch(() => {});
+    analyser = context.createAnalyser(); analyser.fftSize = 256; analyser.connect(context.destination);
     decoder = new AudioDecoder({ output: play, error: () => stop('Sound decoding failed. Try listening again.') });
     decoder.configure({ codec: 'opus', sampleRate: 48000, numberOfChannels: 2 });
     nextTime = 0; listening = true; button(); note('Connecting…');
