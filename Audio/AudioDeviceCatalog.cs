@@ -9,11 +9,13 @@ record AudioDevice(string Id, string Name, string Direction, string State, bool 
 record AudioSnapshot(string Revision, AudioDevice[] Devices, bool Simulated);
 record AudioResult(string Id, bool Confirmed, AudioDevice? Device, string? Error = null);
 interface IAudioDevices : IDisposable {
+    AudioSessionSnapshot Sessions();
+    AudioSession SetSession(string id, double? value, bool? muted);
     AudioSnapshot Snapshot();
     AudioDevice Set(string id, double? value, bool? muted);
 }
 [SupportedOSPlatform("windows")]
-sealed class AudioDeviceCatalog : IAudioDevices {
+sealed partial class AudioDeviceCatalog : IAudioDevices {
     sealed record Entry(string WindowsId, string Id, string Name, string Direction, string State, bool Default, bool Communications, IAudioEndpointVolume? Volume, AudioVolumeNotification? Callback);
     readonly IMMDeviceEnumerator enumerator;
     readonly AudioDeviceNotification notification;
@@ -98,7 +100,7 @@ sealed class AudioDeviceCatalog : IAudioDevices {
         if (entry.Callback != null) entry.Volume.UnregisterControlChangeNotify(entry.Callback);
         Marshal.ReleaseComObject(entry.Volume);
     }
-    public void Dispose() { enumerator.UnregisterEndpointNotificationCallback(notification); foreach (var entry in entries) Release(entry); entries.Clear(); Marshal.ReleaseComObject(enumerator); }
+    public void Dispose() { enumerator.UnregisterEndpointNotificationCallback(notification); ReleaseSessions(); foreach (var entry in entries) Release(entry); entries.Clear(); Marshal.ReleaseComObject(enumerator); }
 }
 
 sealed class AudioDemoProvider : IAudioDevices {
@@ -109,6 +111,16 @@ sealed class AudioDemoProvider : IAudioDevices {
         ["demo-offline"] = new("demo-offline", "Demo disconnected HDMI", "output", "unplugged", false, false, false, null, null),
         ["demo-unsupported"] = new("demo-unsupported", "Demo read-only output", "output", "active", false, false, false, null, null)
     };
+    readonly Dictionary<string, AudioSession> sessions = new() {
+        ["demo-browser"] = new("demo-browser", "demo-speakers", "Demo speakers", "Demo browser", 1001, false, true, 80, false),
+        ["demo-music"] = new("demo-music", "demo-speakers", "Demo speakers", "Demo music player", 1002, false, true, 35, false),
+        ["demo-system"] = new("demo-system", "demo-speakers", "Demo speakers", "System sounds", 0, true, false, 100, false)
+    };
+    public AudioSessionSnapshot Sessions() => new("demo-sessions-v1", sessions.Values.ToArray(), true);
+    public AudioSession SetSession(string id, double? value, bool? muted) {
+        if (!sessions.TryGetValue(id, out var session)) throw new InvalidOperationException("Application audio session ended. Refresh applications.");
+        return sessions[id] = session with { Volume = value ?? session.Volume, Muted = muted ?? session.Muted };
+    }
     public AudioSnapshot Snapshot() => new("demo-audio-v1", devices.Values.ToArray(), true);
     public AudioDevice Set(string id, double? value, bool? muted) {
         if (!devices.TryGetValue(id, out var device) || !device.Supported || device.State != "active") throw new InvalidOperationException("Audio device is unavailable or unsupported.");

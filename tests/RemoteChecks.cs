@@ -75,6 +75,15 @@ await using (var fixture = await Fixture.Start(serverPath)) {
     var result = await fixture.Post("/api/audio/devices/demo-headphones/volume", new { value = 20, revision });
     var response = await result.Content.ReadFromJsonAsync<JsonElement>();
     Check(response.GetProperty("confirmed").GetBoolean() && response.GetProperty("results")[0].GetProperty("device").GetProperty("muted").GetBoolean(), "volume write confirmed and mute preserved");
+    var apps = await fixture.Http.GetFromJsonAsync<AudioSessionSnapshot>("/api/audio/sessions", RemoteProtocol.Json);
+    Check(apps?.Sessions.Length == 3 && apps.Simulated, "synthetic application sessions listed without touching real apps");
+    Check((await fixture.Post("/api/audio/sessions/demo-browser/volume", new { value = 101, revision = apps!.Revision })).StatusCode == HttpStatusCode.BadRequest, "application volume validation");
+    Check((await fixture.Post("/api/audio/sessions/demo-browser/volume", new { value = 10, revision = "old" })).StatusCode == HttpStatusCode.Conflict, "stale application list rejected");
+    Check((await fixture.Post("/api/audio/sessions/missing/volume", new { value = 10, revision = apps.Revision })).StatusCode == HttpStatusCode.NotFound, "ended application session rejected");
+    var appResult = await (await fixture.Post("/api/audio/sessions/demo-browser/volume", new { value = 12, revision = apps.Revision })).Content.ReadFromJsonAsync<JsonElement>();
+    Check(appResult.GetProperty("confirmed").GetBoolean() && appResult.GetProperty("session").GetProperty("volume").GetDouble() == 12, "application volume applied with readback");
+    appResult = await (await fixture.Post("/api/audio/sessions/demo-music/mute", new { muted = true, revision = apps.Revision })).Content.ReadFromJsonAsync<JsonElement>();
+    Check(appResult.GetProperty("confirmed").GetBoolean() && appResult.GetProperty("session").GetProperty("volume").GetDouble() == 35, "application mute keeps its volume");
     result = await fixture.Post("/api/audio/outputs/volume", new { value = 33, revision, deviceIds = new[] { "demo-speakers", "demo-headphones", "demo-unsupported" } });
     response = await result.Content.ReadFromJsonAsync<JsonElement>();
     Check(!response.GetProperty("confirmed").GetBoolean() && response.GetProperty("results").GetArrayLength() == 3 && response.GetProperty("results")[0].GetProperty("confirmed").GetBoolean(), "bulk audio partial failure reported per endpoint");

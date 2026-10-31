@@ -49,11 +49,40 @@ static class AudioEndpoints {
         app.MapPost("/api/audio/devices/{id}/volume", (HttpContext ctx, string id, AudioChange request) => Change(ctx, audio, manager, request, id, false));
         app.MapPost("/api/audio/devices/{id}/mute", (HttpContext ctx, string id, AudioChange request) => Change(ctx, audio, manager, request, id, true));
         app.MapPost("/api/audio/outputs/volume", (HttpContext ctx, AudioChange request) => Change(ctx, audio, manager, request, null, false));
+        app.MapGet("/api/audio/sessions", (Delegate)((HttpContext ctx) => ReadSessions(ctx, audio, manager)));
+        app.MapPost("/api/audio/sessions/{id}/volume", (HttpContext ctx, string id, AudioChange request) => ChangeSession(ctx, audio, manager, request, id, false));
+        app.MapPost("/api/audio/sessions/{id}/mute", (HttpContext ctx, string id, AudioChange request) => ChangeSession(ctx, audio, manager, request, id, true));
         app.MapPost("/api/audio/outputs/mute", (HttpContext ctx, AudioChange request) => Change(ctx, audio, manager, request, null, true));
     }
     static void Authorize(HttpContext ctx, RemoteSessionManager manager) {
         ctx.RequestAborted.ThrowIfCancellationRequested();
         if (!manager.AudioAllowed(FeatureApi.Owner(ctx))) throw new FeatureException(403, "Enable Allow audio volume control in the PC app, then reconnect.");
+    }
+    static async Task<IResult> ReadSessions(HttpContext ctx, AudioControlService audio, RemoteSessionManager manager) {
+        try {
+            Authorize(ctx, manager);
+            return Results.Ok(await audio.Run(devices => { Authorize(ctx, manager); return devices.Sessions(); }, ctx.RequestAborted));
+        } catch (Exception e) when (e is FeatureException or InvalidOperationException or COMException or OperationCanceledException) { return FeatureApi.Error(e); }
+    }
+    static async Task<IResult> ChangeSession(HttpContext ctx, AudioControlService audio, RemoteSessionManager manager, AudioChange request, string id, bool mute) {
+        try {
+            Authorize(ctx, manager);
+            if (mute ? !request.Muted.HasValue : !request.Value.HasValue || !double.IsFinite(request.Value.Value) || request.Value < 0 || request.Value > 100)
+                throw new FeatureException(400, mute ? "Provide an explicit mute state." : "Volume must be 0–100.");
+            return Results.Ok(await audio.Run(devices => {
+                Authorize(ctx, manager);
+                var snapshot = devices.Sessions();
+                if (request.Revision != snapshot.Revision) throw new FeatureException(409, "Applications changed. Refresh before changing volume.");
+                if (!snapshot.Sessions.Any(s => s.Id == id)) throw new FeatureException(404, "Application audio session ended.");
+                try {
+                    var actual = devices.SetSession(id, mute ? null : request.Value, mute ? request.Muted : null);
+                    var confirmed = mute ? actual.Muted == request.Muted : actual.Volume.HasValue && Math.Abs(actual.Volume.Value - request.Value!.Value) <= 1;
+                    return new { session = actual, confirmed, error = confirmed ? null : "Requested setting differs from Windows readback.", simulated = snapshot.Simulated };
+                } catch (Exception e) when (e is InvalidOperationException or COMException) {
+                    return new { session = (AudioSession?)null, confirmed = false, error = "The application rejected the change or its sound ended. Refresh applications.", simulated = snapshot.Simulated };
+                }
+            }, ctx.RequestAborted));
+        } catch (Exception e) when (e is FeatureException or InvalidOperationException or COMException or OperationCanceledException) { return FeatureApi.Error(e); }
     }
     static async Task<IResult> Read(HttpContext ctx, AudioControlService audio, RemoteSessionManager manager) {
         try {
