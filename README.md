@@ -6,7 +6,7 @@ View a selected Windows display, control the mouse with touch, type from your ph
 
 **Platform:** Windows · **Backend:** C# / .NET 10 / ASP.NET Core · **Desktop:** Windows Forms · **Phone interface:** HTML, CSS, JavaScript and WebSockets
 
-This project targets a reachable, trusted home LAN. HTTP/WebSocket traffic is unencrypted; pairing and local permissions do not provide transport encryption. Away-from-home access, PC sound streaming, Windows unlocking and waking a sleeping PC are outside the current scope.
+This project targets a reachable, trusted home LAN. By default HTTP/WebSocket traffic is unencrypted; turn on HTTPS (see Encryption and remote access) before using it away from home. Windows unlocking from the phone and waking a sleeping PC are not included.
 
 ## What it does
 
@@ -100,6 +100,12 @@ Audio shows **PC volume** for the default playback endpoint, plus individual car
 
 Windows/hardware volume changes refresh while Audio is visible. Refresh after device/default changes or an uncertain operation. Writes are tied to endpoint IDs and the current catalog; a default change cannot silently redirect a PC-volume write. Queued changes are discarded on failure/disconnection and never replayed on reconnect.
 
+### Applications and PC sound streaming
+
+The Audio tab also lists **Applications**: each program with a Windows audio session gets its own volume and mute per playback device. It uses the same **Allow audio volume control** permission. Some protected programs may refuse a change; the card then reports it.
+
+**Listen to PC sound** streams everything the PC plays (including notifications) to the phone as Opus audio over a WebSocket. It needs **Allow PC sound streaming** in the PC app, which is off at every launch, plays on one phone at a time, and ends when the permission is turned off, the phone is revoked or Stop remote session is chosen. The PC speakers keep playing. Nothing is recorded or stored. Playback uses WebCodecs, so iOS 26 or a current desktop browser is required. Expect roughly 100 to 200 ms of delay; it is not suited to lip-sync-critical video.
+
 ## Existing display controls
 
 Enable DDC/CI in the monitor menu for brightness. Laptop internal screens and some docks/adapters may not support it. Brightness cards distinguish requested settings from readback; failures restore the last confirmed reading and offer explicit retry. Rapid edits settle on the latest selection. Monitor IDs follow the current physical enumeration; refresh after cabling changes.
@@ -131,6 +137,16 @@ dotnet run -- --allow-viewing --allow-input --allow-audio
 ```
 
 `desktop`, `Remote`, `Audio`, `wwwroot`, root C# files and `tests` are source. `docs` holds the implementation plan, guide and validation history. Build folders can be regenerated.
+
+## Encryption and remote access
+
+HTTPS is optional and configured through environment variables (or `desktop.json` for the launcher): `MONITOR_TLS_CERT` (PFX path), `MONITOR_TLS_PASSWORD`, `MONITOR_TLS_PORT` (default 8766), `MONITOR_ALLOWED_HOSTS` (comma-separated hostnames the server may be reached by) and `MONITOR_ALLOW_HTTP=0` to turn the plain port off. A renewed certificate file is picked up without a restart.
+
+The supported way to reach the PC away from home is **Tailscale**: install it on the PC and phone, run `tailscale cert <pc-name>.<tailnet>.ts.net`, convert the result to a PFX, list that hostname in `MONITOR_ALLOWED_HOSTS`, and open `https://<pc-name>.<tailnet>.ts.net:8766` on the phone. Do not forward a router port; the pairing code is not meant to protect an internet-facing service.
+
+Phones outside the home network (any address that is not loopback or private IPv4, including Tailscale `100.x` addresses) can enter the pairing code but must then be **approved on the PC**; the launcher shows a prompt. Remote sessions last 2 hours (LAN sessions 12), allow 5 pairing attempts per 10 minutes, and every pairing, approval, revocation and permission change is appended to `%LocalAppData%\MonitorRemoteudit.log` (no secrets or typed text). `MONITOR_AUDIT_FILE` overrides the path.
+
+When the PC is locked, the Desktop tab says so. Wake the display from the Displays tab and unlock at the PC; entering a password from the phone is not supported (see `docs/UNLOCK_SPIKE.md`).
 
 ## Checks and real-device acceptance
 

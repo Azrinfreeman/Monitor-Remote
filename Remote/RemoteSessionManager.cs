@@ -33,7 +33,7 @@ sealed class RemoteSessionManager : IDisposable {
         pairing.Revoked += OnRevoked;
         watch = Watch();
     }
-    public object Capabilities() { lock (sync) return new { remoteDesktop = true, audio = true, allowViewing, allowInput, allowAudio, allowSound, soundStream = true, active = session != null }; }
+    public object Capabilities() { var locked = !DesktopDisplayCatalog.Interactive(); lock (sync) return new { locked, remoteDesktop = true, audio = true, allowViewing, allowInput, allowAudio, allowSound, soundStream = true, active = session != null }; }
     public bool Active { get { lock (sync) return session != null; } }
     public void BeginPowerOff() { lock (sync) { if (session != null) throw new FeatureException(409, "Stop remote viewing before turning displays off."); poweringOff++; } }
     public void EndPowerOff() { lock (sync) poweringOff = Math.Max(0, poweringOff - 1); }

@@ -1,6 +1,6 @@
 # Beyond-LAN implementation plan
 
-Status: **proposal, not started.** Nothing in this document has been implemented or built.
+Status: **phases 1-4 and 5a implemented on branch `feat/beyond-lan`; 5b spike not run; 5c not started.** See "Implementation status" at the end.
 Baseline: `main` at `eb5743d`. Related: `REMOTE_DESKTOP_IMPLEMENTATION.md`, `VALIDATION.md`.
 
 This plan covers the five items listed as out of scope in `PROJECT_STATE.md`:
@@ -224,3 +224,15 @@ I have not verified how well the approaches below work on current Windows 11 bui
 3. Phase 5 continues past 5a to the spike and a possible privileged component.
 4. Minimum iOS for sound streaming: 26 (WebCodecs Opus; no WASM fallback needed).
 5. No code signing available; assume unsigned binaries.
+
+## Implementation status (2026-10-31)
+
+| Phase | State | Differences from the plan |
+|-------|-------|---------------------------|
+| 1 TLS | Done | Configured by environment variables and `desktop.json`; no launcher settings screen. HSTS omitted because plain HTTP stays available. |
+| 2 Remote access | Done, partly | PC approval, 2-hour remote sessions, 5-attempt lockout, session list and revoke-by-id (management commands), audit log. Not done: launcher screen listing sessions with per-session Revoke (only the approval prompt exists), adaptive JPEG quality, ForwardedHeaders handling (no proxy is supported). Pairing code length unchanged (6 digits) because approval gates remote clients. |
+| 3 Per-app mixing | Done | Read-only discovery verified on the real PC; real volume writes not yet exercised. |
+| 4 Sound streaming | Done, partly | Loopback + Opus + WebCodecs; real capture verified from a script (100 packets); not yet heard on an iPhone. Not done: "mute PC speakers while listening", WASM fallback (iOS 26 only, per decision 4). |
+| 5a Lock state | Done | `locked` capability and a Desktop-tab message. |
+| 5b Spike | Not run | Protocol in `docs/UNLOCK_SPIKE.md`; needs a throwaway machine. |
+| 5c Unlock helper | Not started | Blocked on the spike. |

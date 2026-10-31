@@ -49,7 +49,7 @@
       const select = $('remote-display'), selected = select.value; select.replaceChildren();
       for (const display of result.snapshot.displays) { const option = document.createElement('option'); option.value = display.id; option.textContent = `${display.name} · ${display.width} × ${display.height}`; select.append(option); }
       if (result.snapshot.displays.some(d => d.id === selected)) select.value = selected;
-      $('remote-note').textContent = result.capabilities.allowViewing ? 'Select a display and start viewing. Mouse and keyboard control starts separately.' : 'Enable Allow screen viewing in the PC app, then refresh displays.';
+      $('remote-note').textContent = result.capabilities.locked ? 'The PC is locked or showing a secure prompt. Wake the display from the Displays tab and unlock it at the PC; viewing and control work again afterwards.' : result.capabilities.allowViewing ? 'Select a display and start viewing. Mouse and keyboard control starts separately.' : 'Enable Allow screen viewing in the PC app, then refresh displays.';
     } catch (error) { $('remote-note').textContent = error.message; }
     update();
   }
