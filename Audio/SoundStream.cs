@@ -79,8 +79,9 @@ sealed class SoundStreamService : IDisposable {
     CancellationTokenSource? current;
     readonly RemoteSessionManager manager;
     readonly PairingState pairing;
-    public SoundStreamService(RemoteSessionManager manager, PairingState pairing) {
-        this.manager = manager; this.pairing = pairing;
+    readonly AudioControlService audio;
+    public SoundStreamService(RemoteSessionManager manager, PairingState pairing, AudioControlService audio) {
+        this.manager = manager; this.pairing = pairing; this.audio = audio;
         manager.SoundStopRequested += Stop;
     }
     public void Stop() { lock (sync) current?.Cancel(); }
@@ -89,6 +90,8 @@ sealed class SoundStreamService : IDisposable {
         if (!ctx.WebSockets.IsWebSocketRequest) { ctx.Response.StatusCode = 400; return; }
         var owner = FeatureApi.Owner(ctx);
         if (!manager.SoundAllowed(owner)) { ctx.Response.StatusCode = 403; return; }
+        var mutePc = ctx.Request.Query["mutePc"] == "1";
+        if (mutePc && !manager.AudioAllowed(owner)) { ctx.Response.StatusCode = 403; return; }
         CancellationTokenSource lifetime;
         lock (sync) {
             if (current != null) { ctx.Response.StatusCode = 409; return; }
@@ -96,12 +99,18 @@ sealed class SoundStreamService : IDisposable {
         }
         manager.SoundListening = true;
         ISoundSource? source = null;
+        string? mutedDevice = null;
         try {
             using var socket = await ctx.WebSockets.AcceptWebSocketAsync();
             try {
                 source = DesktopDisplayCatalog.Demo ? new DemoSoundSource() : OperatingSystem.IsWindows() ? new LoopbackSoundSource() : throw new InvalidOperationException("Sound streaming requires Windows.");
                 source.Start();
+                if (mutePc) mutedDevice = await MutePc();
                 await Pump(socket, source, owner, lifetime.Token);
+                if (socket.State == WebSocketState.CloseReceived) {
+                    using var timeout = new CancellationTokenSource(500);
+                    await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "bye", timeout.Token);
+                }
             } catch (Exception error) when (error is InvalidOperationException or System.Runtime.InteropServices.COMException or OperationCanceledException or WebSocketException or IOException) {
                 if (socket.State == WebSocketState.Open) {
                     try {
@@ -114,10 +123,37 @@ sealed class SoundStreamService : IDisposable {
             }
         } finally {
             source?.Dispose();
+            if (mutedDevice != null) await Unmute(mutedDevice);
             lock (sync) { current = null; }
             lifetime.Dispose();
             manager.SoundListening = false;
         }
+    }
+    // Optional: silence the PC speakers while listening. The previous state is restored when the stream ends, and a marker file
+    // lets the next server start undo the mute if the process died mid-stream.
+    static string MarkerPath => Environment.GetEnvironmentVariable("MONITOR_MUTE_MARKER") ??
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MonitorRemote", "unmute-pending.txt");
+    async Task<string?> MutePc() {
+        try {
+            return await audio.Run(devices => {
+                var device = devices.Snapshot().Devices.FirstOrDefault(d => d.Default && d.Direction == "output" && d.State == "active" && d.Supported);
+                if (device == null || device.Muted == true) return null;
+                Directory.CreateDirectory(Path.GetDirectoryName(MarkerPath)!);
+                File.WriteAllText(MarkerPath, device.Id);
+                devices.Set(device.Id, null, true);
+                return device.Id;
+            }, CancellationToken.None);
+        } catch (Exception e) when (e is FeatureException or InvalidOperationException or System.Runtime.InteropServices.COMException or IOException) { return null; }
+    }
+    async Task Unmute(string id) {
+        try {
+            await audio.Run(devices => { devices.Snapshot(); devices.Set(id, null, false); return 0; }, CancellationToken.None);
+            File.Delete(MarkerPath);
+        } catch (Exception e) when (e is FeatureException or InvalidOperationException or System.Runtime.InteropServices.COMException or IOException) { }
+    }
+    public async Task RecoverMute() {
+        try { if (File.Exists(MarkerPath) && File.ReadAllText(MarkerPath).Trim() is { Length: > 0 } id) await Unmute(id); }
+        catch (IOException) { }
     }
     async Task Pump(WebSocket socket, ISoundSource source, string owner, CancellationToken token) {
         var encoder = OpusCodecFactory.CreateEncoder(SoundFormat.Rate, SoundFormat.Channels, OpusApplication.OPUS_APPLICATION_AUDIO);

@@ -85,7 +85,7 @@
       revealed.add(name);
       const items = [...pane.children].slice(0, 6); items.forEach((item, index) => item.style.setProperty('--i', index));
       pane.classList.add('reveal'); setTimeout(() => pane.classList.remove('reveal'), 700);
-    } else { pane.classList.add('pane-enter'); pane.addEventListener('animationend', () => pane.classList.remove('pane-enter'), { once: true }); }
+    } else if (typeof document.startViewTransition !== 'function') { pane.classList.add('pane-enter'); pane.addEventListener('animationend', () => pane.classList.remove('pane-enter'), { once: true }); }
     scrollTo({ top: 0, behavior: 'instant' });
   });
   observe($('feature-tabs'), { attributes: true, attributeFilter: ['hidden'] }, placeIndicator);

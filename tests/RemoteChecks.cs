@@ -75,6 +75,22 @@ await using (var fixture = await Fixture.Start(serverPath)) {
     var result = await fixture.Post("/api/audio/devices/demo-headphones/volume", new { value = 20, revision });
     var response = await result.Content.ReadFromJsonAsync<JsonElement>();
     Check(response.GetProperty("confirmed").GetBoolean() && response.GetProperty("results")[0].GetProperty("device").GetProperty("muted").GetBoolean(), "volume write confirmed and mute preserved");
+    await fixture.Management("sound:on");
+    using (var quiet = fixture.Socket()) {
+        await quiet.ConnectAsync(fixture.SocketUrl("../audio/stream?mutePc=1"), CancellationToken.None);
+        await Fixture.ReceiveBytes(quiet);
+        var during = await fixture.Http.GetFromJsonAsync<AudioSnapshot>("/api/audio/devices", RemoteProtocol.Json);
+        Check(during!.Devices.First(d => d.Id == "demo-speakers").Muted == true, "listening can mute the PC speakers");
+        await quiet.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None);
+    }
+    var restored = false;
+    for (var i = 0; i < 40 && !restored; i++) {
+        await Task.Delay(50);
+        var after = await fixture.Http.GetFromJsonAsync<AudioSnapshot>("/api/audio/devices", RemoteProtocol.Json);
+        restored = after!.Devices.First(d => d.Id == "demo-speakers").Muted == false;
+    }
+    Check(restored, "PC speakers are unmuted again when listening ends");
+    await fixture.Management("sound:off");
     var apps = await fixture.Http.GetFromJsonAsync<AudioSessionSnapshot>("/api/audio/sessions", RemoteProtocol.Json);
     Check(apps?.Sessions.Length == 3 && apps.Simulated, "synthetic application sessions listed without touching real apps");
     Check((await fixture.Post("/api/audio/sessions/demo-browser/volume", new { value = 101, revision = apps!.Revision })).StatusCode == HttpStatusCode.BadRequest, "application volume validation");
@@ -194,6 +210,15 @@ Check(remotePairing.Decide(denyId!, false) && remotePairing.Poll(denyId!, "100.6
 for (var i = 0; i < 5; i++) remotePairing.PairRemote("100.64.7.7", "000000", "x", out _);
 Check(remotePairing.PairRemote("100.64.7.7", remotePairing.Status().Code!, "x", out _) == 429, "Remote pairing locks out after five failures");
 Check(events.Any(e => e.StartsWith("approved")) && events.Any(e => e.StartsWith("denied")) && !events.Any(e => e.Contains(remoteToken!)), "Audit records decisions and no tokens");
+var adapt = new AdaptiveQuality("clear");
+for (var i = 0; i < 4; i++) adapt.Observe(TimeSpan.FromMilliseconds(300));
+Check(adapt.Current == "balanced" && adapt.Reduced, "slow frame delivery steps quality down");
+for (var i = 0; i < 12; i++) adapt.Observe(TimeSpan.FromMilliseconds(300));
+Check(adapt.Current == "low", "quality never drops below low");
+for (var i = 0; i < 200; i++) adapt.Observe(TimeSpan.FromMilliseconds(5));
+Check(adapt.Current == "clear" && !adapt.Reduced, "healthy link restores the chosen quality, never above it");
+var capped = new AdaptiveQuality("balanced"); for (var i = 0; i < 300; i++) capped.Observe(TimeSpan.FromMilliseconds(5));
+Check(capped.Current == "balanced", "adaptive quality does not exceed the requested level");
 var tlsOff = new TlsSettings(_ => null);
 Check(!tlsOff.Enabled && tlsOff.AllowPlainHttp && tlsOff.HostAllowed("192.168.1.5") && tlsOff.HostAllowed("localhost") && !tlsOff.HostAllowed("8.8.8.8") && !tlsOff.HostAllowed("phone.ts.net"), "TLS off keeps the private-address host rule");
 var tlsHosts = new TlsSettings(k => k == "MONITOR_ALLOWED_HOSTS" ? "Phone.Example.ts.net, bad!host" : null);

@@ -9,6 +9,8 @@ input[type=range]:active::-webkit-slider-thumb { transform: scale(1.12); }
 input[type=range]::-moz-range-thumb { transition: transform var(--dur-press) var(--ease-out); }
 input[type=range]:active::-moz-range-thumb { transform: scale(1.12); }
 
+input[type=checkbox][role=switch], input[type=checkbox][role=switch]::after { transition: transform .35s var(--spring-snappy), background-color var(--dur-ui) var(--ease-out); }
+
 /* Tab bar indicator and segmented thumbs */
 .tabbar .tab-indicator { transition: transform .4s var(--spring-snappy), opacity var(--dur-ui) var(--ease-out); }
 .segmented .thumb { transition: transform .35s var(--spring-snappy); }
@@ -52,7 +54,13 @@ body[data-expanded=true] .viewer-bar[data-idle=true] { opacity: 0; pointer-event
 .meter { transition: opacity var(--dur-ui) var(--ease-out); }
 .meter i { will-change: transform; }
 
+/* Pane cross-fade (View Transitions). The bars keep their own layer so only the content fades. */
+.bar { view-transition-name: title-bar; }
+.tabbar { view-transition-name: tab-bar; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--dur-ui); animation-timing-function: var(--ease-out); }
+
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   button:active:not(:disabled), input[type=range]:active::-webkit-slider-thumb { transform: none; }
   .status::after { display: none; }

@@ -14,7 +14,13 @@
     get selected() { return selected; },
     active(active) { this.remoteActive = active; window.monitorApp.updateControls(); }
   };
+  // Cross-fade between panes with the View Transitions API where it exists; elsewhere the pane just switches.
   function choose(name) {
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (name !== selected && !reduced && typeof document.startViewTransition === 'function') document.startViewTransition(() => apply(name));
+    else apply(name);
+  }
+  function apply(name) {
     if (selected === 'desktop' && name !== 'desktop') window.remoteUI?.stop('Viewing stopped.');
     selected = name;
     for (const pane of ['monitors', 'desktop', 'audio']) {

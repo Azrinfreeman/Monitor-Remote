@@ -80,16 +80,19 @@ static class RemoteEndpoints {
     }
     static async Task ProduceFrames(WebSocket socket, RemoteSessionManager manager, RemoteSession current, CancellationToken token) {
         using var capture = new DesktopCaptureService();
+        var adaptive = new AdaptiveQuality(current.Quality);
         while (manager.Valid(current) && !token.IsCancellationRequested) {
             var began = Stopwatch.GetTimestamp();
-            var frame = await capture.Next(current.Display, current.Snapshot.Revision, current.Quality, token);
+            var frame = await capture.Next(current.Display, current.Snapshot.Revision, adaptive.Current, token);
             if (!manager.Valid(current)) break;
             if (frame.Metadata.Revision != current.Snapshot.Revision) throw new InvalidOperationException("Display layout changed. Refresh displays.");
             var sequence = manager.Frame(current, began);
             var packet = RemoteProtocol.Encode(frame with { Metadata = frame.Metadata with { Sequence = sequence } });
             using var send = CancellationTokenSource.CreateLinkedTokenSource(token); send.CancelAfter(2000);
+            var sending = Stopwatch.GetTimestamp();
             await socket.SendAsync(packet, WebSocketMessageType.Binary, true, send.Token);
-            var delay = TimeSpan.FromMilliseconds(current.Quality == "low" ? 250 : current.Quality == "clear" ? 167 : 125) - Stopwatch.GetElapsedTime(began);
+            adaptive.Observe(Stopwatch.GetElapsedTime(sending));
+            var delay = TimeSpan.FromMilliseconds(adaptive.Current == "low" ? 250 : adaptive.Current == "clear" ? 167 : 125) - Stopwatch.GetElapsedTime(began);
             if (delay > TimeSpan.Zero) await Task.Delay(delay, token);
         }
     }
