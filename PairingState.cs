@@ -16,6 +16,8 @@ sealed class PairingState {
     public event Action<string?>? Revoked;
     public PairingState(TimeProvider? clock = null, Action<string>? audit = null) { this.clock = clock ?? TimeProvider.System; this.audit = audit; Renew(false); }
     // Loopback and private IPv4 count as the home network; everything else (tailnet, mobile data) needs approval on the PC.
+    // Local-only policy: the server answers only the PC itself and devices on its private network, unless MONITOR_ALLOW_REMOTE=1 is set.
+    public static bool PeerAllowed(IPAddress? address, bool allowRemote) => allowRemote || IsLan(address);
     public static bool IsLan(IPAddress? address) {
         if (address == null) return false;
         if (address.IsIPv4MappedToIPv6) address = address.MapToIPv4();

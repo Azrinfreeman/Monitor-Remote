@@ -17,6 +17,7 @@ var permissionArguments = new[] { "--allow-viewing", "--allow-input", "--allow-a
 var builder = WebApplication.CreateBuilder(args.Where(a => !permissionArguments.Contains(a)).ToArray());
 var port = int.TryParse(Environment.GetEnvironmentVariable("MONITOR_PORT"), out var p) ? p : 8765;
 var tls = new TlsSettings(Environment.GetEnvironmentVariable);
+var allowRemote = Environment.GetEnvironmentVariable("MONITOR_ALLOW_REMOTE") == "1";
 builder.WebHost.ConfigureKestrel(options => {
     options.Limits.MaxRequestBodySize = 65536;
     if (!tls.Enabled || tls.AllowPlainHttp) options.Listen(IPAddress.Any, port);
@@ -36,6 +37,7 @@ if (pipeName == null) Console.WriteLine($"Pairing code: {pairing.Status().Code} 
 foreach (var ip in Dns.GetHostAddresses(Dns.GetHostName()).Where(x => x.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)) { if (!tls.Enabled || tls.AllowPlainHttp) Console.WriteLine($"Phone URL: http://{ip}:{port}"); if (tls.Enabled) Console.WriteLine($"Phone URL: https://{ip}:{tls.Port}"); }
 app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(1), KeepAliveTimeout = TimeSpan.FromSeconds(3) });
 app.Use(async (ctx, next) => {
+    if (!PairingState.PeerAllowed(ctx.Connection.RemoteIpAddress, allowRemote)) { ctx.Response.StatusCode = 403; return; }
     ctx.Response.Headers["Cache-Control"] = "no-store";
     ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
     var host = ctx.Request.Host.Host;

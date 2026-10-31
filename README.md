@@ -138,7 +138,11 @@ dotnet run -- --allow-viewing --allow-input --allow-audio
 
 `desktop`, `Remote`, `Audio`, `wwwroot`, root C# files and `tests` are source. `docs` holds the implementation plan, guide and validation history. Build folders can be regenerated.
 
-## Encryption and remote access
+## Local network only
+
+By default the server answers only the PC itself and devices on its private network (192.168.x.x, 10.x.x.x, 172.16-31.x.x). Any other address, including the internet and Tailscale, gets a 403 before anything else happens. Away-from-home access is switched off. The sections below describe it for completeness; it works only if you start the server with `MONITOR_ALLOW_REMOTE=1`, and the launcher has no setting for it.
+
+## Encryption and remote access (optional, off by default)
 
 HTTPS is optional and configured through environment variables (or `desktop.json` for the launcher): `MONITOR_TLS_CERT` (PFX path), `MONITOR_TLS_PASSWORD`, `MONITOR_TLS_PORT` (default 8766), `MONITOR_ALLOWED_HOSTS` (comma-separated hostnames the server may be reached by) and `MONITOR_ALLOW_HTTP=0` to turn the plain port off. A renewed certificate file is picked up without a restart.
 

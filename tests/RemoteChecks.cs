@@ -210,6 +210,9 @@ Check(remotePairing.Decide(denyId!, false) && remotePairing.Poll(denyId!, "100.6
 for (var i = 0; i < 5; i++) remotePairing.PairRemote("100.64.7.7", "000000", "x", out _);
 Check(remotePairing.PairRemote("100.64.7.7", remotePairing.Status().Code!, "x", out _) == 429, "Remote pairing locks out after five failures");
 Check(events.Any(e => e.StartsWith("approved")) && events.Any(e => e.StartsWith("denied")) && !events.Any(e => e.Contains(remoteToken!)), "Audit records decisions and no tokens");
+Check(PairingState.PeerAllowed(System.Net.IPAddress.Parse("192.168.1.20"), false) && PairingState.PeerAllowed(System.Net.IPAddress.IPv6Loopback, false) && PairingState.PeerAllowed(System.Net.IPAddress.Parse("::ffff:10.0.0.5"), false), "local-only policy accepts the PC and private-network devices");
+Check(!PairingState.PeerAllowed(System.Net.IPAddress.Parse("8.8.8.8"), false) && !PairingState.PeerAllowed(System.Net.IPAddress.Parse("100.64.1.2"), false) && !PairingState.PeerAllowed(null, false), "local-only policy refuses internet, tailnet and unknown peers");
+Check(PairingState.PeerAllowed(System.Net.IPAddress.Parse("100.64.1.2"), true), "remote access stays an explicit opt-in");
 var adapt = new AdaptiveQuality("clear");
 for (var i = 0; i < 4; i++) adapt.Observe(TimeSpan.FromMilliseconds(300));
 Check(adapt.Current == "balanced" && adapt.Reduced, "slow frame delivery steps quality down");
