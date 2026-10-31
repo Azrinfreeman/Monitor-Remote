@@ -19,8 +19,8 @@ var port = int.TryParse(Environment.GetEnvironmentVariable("MONITOR_PORT"), out 
 var tls = new TlsSettings(Environment.GetEnvironmentVariable);
 builder.WebHost.ConfigureKestrel(options => {
     options.Limits.MaxRequestBodySize = 65536;
-    if (!tls.Enabled || tls.AllowPlainHttp) options.ListenAnyIP(port);
-    if (tls.Enabled) options.ListenAnyIP(tls.Port, listen => listen.UseHttps(https => https.ServerCertificateSelector = (_, _) => tls.Certificate()));
+    if (!tls.Enabled || tls.AllowPlainHttp) options.Listen(IPAddress.Any, port);
+    if (tls.Enabled) options.Listen(IPAddress.Any, tls.Port, listen => listen.UseHttps(https => https.ServerCertificateSelector = (_, _) => tls.Certificate()));
 });
 var app = builder.Build();
 var pairing = new PairingState(audit: AuditLog.Write);
