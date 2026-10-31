@@ -1,15 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <RootNamespace>MonitorRemoteDesktop</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>assets/monitor-remote.ico</ApplicationIcon>
+    <UseWinUI>true</UseWinUI>
+    <!-- Portable folder, no MSIX or signing: unpackaged with a self-contained Windows App SDK. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <EnableMsixTooling>false</EnableMsixTooling>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <ApplicationIcon>assets/monitor-remote.ico</ApplicationIcon>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="assets/monitor-remote.ico" LogicalName="MonitorRemote.AppIcon" />
+    <Content Include="assets/monitor-remote.ico" CopyToOutputDirectory="PreserveNewest" Link="Assets/AppIcon.ico" />
     <Compile Include="../ManagementProtocol.cs" Link="ManagementProtocol.cs" />
     <PackageReference Include="QRCoder" Version="1.8.0" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="*" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="*" />
   </ItemGroup>
 </Project>

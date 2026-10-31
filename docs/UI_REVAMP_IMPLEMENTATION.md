@@ -326,3 +326,22 @@ Phases (each is a commit and can be reviewed on a phone):
 4. Add to Home Screen support: yes.
 5. Desktop tab: viewer-first layout (section 8.4).
 6. Phase order: as listed.
+
+## Implementation status (2026-10-31)
+
+| Phase | State | Notes |
+|-------|-------|-------|
+| 0 Foundations | Done | `tokens.css` (light/dark, purple accent), `base.css`, `components.css`; `tests/design-checks.mjs` validates 57 rules including contrast for every token pair in both modes. Filled buttons use `--accent-fill` `#8944AB`; the lighter `#AF52DE` is used for fills, rings and graphics only. |
+| 1 Shell and pairing | Done | Large title that collapses into a glass bar, bottom tab bar with sliding indicator, connection status with ping/pulse, digit-cell pairing screen with waiting, error and success states, "Connection" sheet. |
+| 2 Displays | Done | Grouped brightness cards, segmented presets, power list. |
+| 3 Audio | Done | PC volume card, Listen card with a level meter driven by the real output level, grouped device and application lists. |
+| 4 Desktop | Done, partly | Viewer-first layout, control bar, keyboard bottom sheet with drag-to-dismiss, immersive expand with an auto-hiding bar, coach mark shown once. Touch mode is a segmented control driving the original select. |
+| 5 Motion and accessibility | Done, partly | Reduced-motion, reduced-transparency and high-contrast handling are in. The View Transitions API was not used; a CSS animation does the pane transition. Not tested at the largest Dynamic Type size on a real iPhone. |
+| 6 Launcher | Done | Rebuilt in WinUI 3 (unpackaged, self-contained Windows App SDK 2.6) so the portable folder and zip still work with no signing. Mica backdrop, native toggle switches, QR fade-in, status-dot colour transition, approval dialog, tray icon through `Shell_NotifyIcon`. |
+| 7 Docs | Partly | This status table. README screenshots not yet taken. |
+
+Deviations and things to know:
+- **Unpackaged WinUI.** The winui-dev-workflow guidance prefers a packaged (MSIX) app. This project ships as an unsigned portable folder, so the launcher is unpackaged (`WindowsPackageType=None`). It still uses the Windows App SDK runtime, bundled self-contained.
+- **`package.ps1` builds the launcher instead of publishing it.** An unpackaged WinUI `dotnet publish` omitted the compiled XAML (`.xbf`) and resource index (`.pri`), which crashed the app at startup with a XAML parse error. The package is about 340 MB because the Windows App SDK is bundled.
+- **Windows Forms cannot be mixed in** (the WPF markup targets it pulls in break the WinUI XAML compiler), so the tray icon is a small direct `Shell_NotifyIcon` wrapper (`desktop/Tray.cs`).
+- **Verification.** Phone UI: headless Edge screenshots (`tests/screenshots.mjs`) in light and dark, portrait, landscape and iPhone SE size, with no JavaScript errors. Launcher: the 21 packaged checks pass and the window was launched and inspected on this PC. Not done: real iPhone testing, tray menu and approval dialog exercised by hand, ARM64.

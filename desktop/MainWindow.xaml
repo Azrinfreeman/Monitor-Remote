@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="MonitorRemoteDesktop.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Monitor Remote">
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TitleBar x:Name="AppTitleBar" Title="Monitor Remote">
+            <TitleBar.IconSource>
+                <ImageIconSource ImageSource="Assets/AppIcon.ico" />
+            </TitleBar.IconSource>
+        </TitleBar>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="16" Padding="28,8,28,28" MaxWidth="900">
+
+                <!-- Header: state and server controls -->
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Border x:Name="StatusDot" Width="12" Height="12" CornerRadius="6" VerticalAlignment="Center">
+                                <Border.BackgroundTransition>
+                                    <BrushTransition Duration="0:0:0.3" />
+                                </Border.BackgroundTransition>
+                            </Border>
+                            <TextBlock x:Name="StatusText" Text="Stopped" Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.LiveSetting="Polite" />
+                        </StackPanel>
+                        <TextBlock x:Name="RemoteStatus" Text="Remote viewing idle" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button x:Name="StartButton" Content="Start" Style="{StaticResource AccentButtonStyle}" MinWidth="88" />
+                        <Button x:Name="StopButton" Content="Stop" MinWidth="88" />
+                        <Button x:Name="RestartButton" Content="Restart" MinWidth="88" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid ColumnSpacing="16" RowSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="300" />
+                        <ColumnDefinition Width="*" MinWidth="300" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Connect -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="Connect your phone" Style="{StaticResource SectionTitle}" />
+                            <Border HorizontalAlignment="Center" Background="White" CornerRadius="10" Padding="10" Width="196" Height="196">
+                                <Image x:Name="QrImage" Opacity="0" AutomationProperties.Name="QR code for the phone URL">
+                                    <Image.OpacityTransition>
+                                        <ScalarTransition Duration="0:0:0.35" />
+                                    </Image.OpacityTransition>
+                                </Image>
+                            </Border>
+                            <TextBox x:Name="UrlBox" IsReadOnly="True" AutomationProperties.Name="Phone URL" PlaceholderText="Start the server to get a phone URL" />
+                            <ComboBox x:Name="AddressBox" HorizontalAlignment="Stretch" Header="Network address" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button x:Name="CopyButton" Content="Copy URL" />
+                                <Button x:Name="OpenButton" Content="Open here" />
+                                <Button x:Name="RefreshAddressesButton" Content="Refresh" />
+                            </StackPanel>
+                            <StackPanel Spacing="2" Padding="0,6,0,0">
+                                <TextBlock Text="Pairing code" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock x:Name="CodeText" Text="—" FontSize="40" FontWeight="SemiBold" CharacterSpacing="120" IsTextSelectionEnabled="True" />
+                                <TextBlock x:Name="ExpiryText" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button x:Name="RenewButton" Content="New pairing code" />
+                                <Button x:Name="RevokeButton" Content="Disconnect all phones" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Access -->
+                    <StackPanel Grid.Column="1" Spacing="16">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Phone access" Style="{StaticResource SectionTitle}" />
+                                <TextBlock Text="Off after every restart. Turn on only what you need." Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                <ToggleSwitch x:Name="ViewingToggle" Header="Screen viewing" OnContent="Allowed" OffContent="Off" Margin="0,10,0,0" />
+                                <ToggleSwitch x:Name="InputToggle" Header="Mouse and keyboard control" OnContent="Allowed" OffContent="Off" />
+                                <ToggleSwitch x:Name="AudioToggle" Header="Audio volume control" OnContent="Allowed" OffContent="Off" />
+                                <ToggleSwitch x:Name="SoundToggle" Header="PC sound streaming" OnContent="Allowed" OffContent="Off" />
+                                <TextBlock Text="Sound streaming sends everything the PC plays, including notifications." Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" FontSize="12" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Remote session" Style="{StaticResource SectionTitle}" />
+                                <TextBlock x:Name="SessionText" Text="Idle" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                                <Button x:Name="RemoteStopButton" Content="Stop remote session" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Advanced -->
+                <Expander Header="Advanced" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <StackPanel Spacing="14">
+                        <NumberBox x:Name="PortBox" Header="Port (applies on next start)" Minimum="1" Maximum="65535" SpinButtonPlacementMode="Compact" Width="200" HorizontalAlignment="Left" />
+                        <ToggleSwitch x:Name="AutoStartToggle" Header="Start the server when this app opens" OnContent="On" OffContent="Off" />
+                        <ToggleSwitch x:Name="SignInToggle" Header="Open this app at Windows sign-in" OnContent="On" OffContent="Off" />
+                        <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Text="Use trusted home Wi-Fi, or HTTPS over a private network such as Tailscale. Allow Private networks in Windows Firewall. Guest Wi-Fi, VPNs and a sleeping PC can block connections." />
+                        <TextBox x:Name="DiagnosticsBox" Header="Diagnostics" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" Height="120" FontFamily="Consolas" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="CopyLogsButton" Content="Copy diagnostics" />
+                            <Button x:Name="ExitButton" Content="Exit app" />
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>
