@@ -6,7 +6,7 @@ record SessionView(string Id, string Address, string Label, bool Remote, DateTim
 record ManagementRequest(int Version, string Secret, string Command);
 record ManagementReply(int Version, bool Running, string? Code = null, DateTimeOffset? Expires = null, string? Error = null,
     bool AllowViewing = false, bool AllowInput = false, bool AllowAudio = false, string? RemoteState = null, string? DisplayName = null,
-    PendingPairing[]? Pending = null, SessionView[]? Sessions = null);
+    PendingPairing[]? Pending = null, SessionView[]? Sessions = null, bool AllowSound = false, bool SoundActive = false);
 static class ManagementProtocol {
     public static async Task<T> Read<T>(Stream stream, CancellationToken token) {
         var bytes = new List<byte>();

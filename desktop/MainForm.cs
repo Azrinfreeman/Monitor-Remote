@@ -24,13 +24,14 @@ sealed class MainForm : Form {
     readonly CheckBox allowViewing = new() { Text = "Allow screen viewing", AutoSize = true };
     readonly CheckBox allowInput = new() { Text = "Allow mouse and keyboard control", AutoSize = true };
     readonly CheckBox allowAudio = new() { Text = "Allow audio volume control", AutoSize = true };
+    readonly CheckBox allowSound = new() { Text = "Allow PC sound streaming (sends everything the PC plays)", AutoSize = true };
     readonly Label remoteStatus = new() { AutoSize = true, Text = "Remote viewing idle" };
     readonly Button remoteStop = new() { Text = "Stop remote session", AutoSize = true };
     readonly NotifyIcon tray;
     readonly ToolStripMenuItem trayStart = new("Start server"), trayStop = new("Stop server");
     readonly ToolStripMenuItem trayRemoteStop = new("Stop remote session");
     readonly System.Windows.Forms.Timer timer = new() { Interval = 1000 };
-    bool busy, exiting, ready, applyingPermissions, remoteActive, approving;
+    bool busy, exiting, ready, applyingPermissions, remoteActive, approving, soundActive;
     int activePort;
     DateTimeOffset? expires;
     record AddressChoice(string Address, string Name) { public override string ToString() => Name + " — " + Address; }
@@ -58,7 +59,7 @@ sealed class MainForm : Form {
         Row(qr); Row(pairing); Row(expiry);
         Row(Group(renew, revoke));
         Row(new Label { Text = "Phone access (resets when the server restarts)", AutoSize = true });
-        Row(allowViewing); Row(allowInput); Row(allowAudio);
+        Row(allowViewing); Row(allowInput); Row(allowAudio); Row(allowSound);
         Row(Group(remoteStatus, remoteStop));
         port.Value = prefs.Port;
         Row(Group(new Label { Text = "Port (on next start)", AutoSize = true, Padding = new Padding(0, 5, 0, 0) }, port));
@@ -86,7 +87,7 @@ sealed class MainForm : Form {
         trayStop.Click += async (_, _) => await Execute(Stop);
         renew.Click += async (_, _) => await Execute(async () => { Apply(await server.Send("renew")); Log("Pairing code renewed; paired phones remain connected."); });
         revoke.Click += async (_, _) => await Execute(async () => { Apply(await server.Send("revoke")); Log("All phone sessions revoked and pairing code renewed."); });
-        foreach (var (control, command) in new[] { (allowViewing, "view"), (allowInput, "input"), (allowAudio, "audio") })
+        foreach (var (control, command) in new[] { (allowViewing, "view"), (allowInput, "input"), (allowAudio, "audio"), (allowSound, "sound") })
             control.CheckedChanged += async (_, _) => {
                 if (applyingPermissions) return;
                 await Execute(async () => Apply(await server.Send(command + (control.Checked ? ":on" : ":off"))));
@@ -175,11 +176,12 @@ sealed class MainForm : Form {
         pairing.Text = "Pairing code: " + (reply.Code ?? "—");
         expires = reply.Expires;
         applyingPermissions = true;
-        allowViewing.Checked = reply.AllowViewing; allowInput.Checked = reply.AllowInput; allowAudio.Checked = reply.AllowAudio;
+        allowViewing.Checked = reply.AllowViewing; allowInput.Checked = reply.AllowInput; allowAudio.Checked = reply.AllowAudio; allowSound.Checked = reply.AllowSound;
         applyingPermissions = false;
-        remoteActive = reply.RemoteState is "Remote control active" or "Screen sharing active";
-        remoteStatus.Text = (reply.RemoteState ?? "Idle") + (reply.DisplayName == null ? "" : " · " + reply.DisplayName);
-        tray.Text = "Monitor Remote · " + (reply.RemoteState ?? "Idle");
+        soundActive = reply.SoundActive;
+        remoteActive = reply.RemoteState is "Remote control active" or "Screen sharing active" || soundActive;
+        remoteStatus.Text = (reply.RemoteState ?? "Idle") + (reply.DisplayName == null ? "" : " · " + reply.DisplayName) + (soundActive ? " · Streaming PC sound" : "");
+        tray.Text = "Monitor Remote · " + (reply.RemoteState ?? "Idle") + (soundActive ? " · sound" : "");
         UpdateUrl();
         if (reply.Pending is { Length: > 0 } && !approving) { approving = true; _ = Approve(reply.Pending[0]); }
     }
@@ -192,7 +194,7 @@ sealed class MainForm : Form {
     }
     void Clear() {
         ready = false; expires = null; pairing.Text = "Pairing code: —"; expiry.Text = ""; url.Clear();
-        applyingPermissions = true; allowViewing.Checked = allowInput.Checked = allowAudio.Checked = false; applyingPermissions = false;
+        applyingPermissions = true; allowViewing.Checked = allowInput.Checked = allowAudio.Checked = allowSound.Checked = false; applyingPermissions = false;
         remoteActive = false; remoteStatus.Text = "Idle"; tray.Text = "Monitor Remote";
         qr.Image?.Dispose(); qr.Image = null;
     }
@@ -202,7 +204,7 @@ sealed class MainForm : Form {
         restart.Enabled = !busy && !exiting;
         renew.Enabled = revoke.Enabled = !busy && !exiting && ready;
         copy.Enabled = ready && url.Text.Length > 0; open.Enabled = ready;
-        allowViewing.Enabled = allowAudio.Enabled = ready && !busy && !exiting;
+        allowViewing.Enabled = allowAudio.Enabled = allowSound.Enabled = ready && !busy && !exiting;
         allowInput.Enabled = ready && allowViewing.Checked && !busy && !exiting;
         remoteStop.Enabled = trayRemoteStop.Enabled = ready && remoteActive && !busy && !exiting;
     }

@@ -13,7 +13,7 @@ if (launchGate != null) {
     while (!File.Exists(launchGate) && DateTime.UtcNow < deadline) await Task.Delay(25);
     if (!File.Exists(launchGate)) return;
 }
-var permissionArguments = new[] { "--allow-viewing", "--allow-input", "--allow-audio" };
+var permissionArguments = new[] { "--allow-viewing", "--allow-input", "--allow-audio", "--allow-sound" };
 var builder = WebApplication.CreateBuilder(args.Where(a => !permissionArguments.Contains(a)).ToArray());
 var port = int.TryParse(Environment.GetEnvironmentVariable("MONITOR_PORT"), out var p) ? p : 8765;
 var tls = new TlsSettings(Environment.GetEnvironmentVariable);
@@ -24,7 +24,8 @@ builder.WebHost.ConfigureKestrel(options => {
 });
 var app = builder.Build();
 var pairing = new PairingState(audit: AuditLog.Write);
-using var remote = new RemoteSessionManager(pairing, args.Contains("--allow-viewing"), args.Contains("--allow-input"), args.Contains("--allow-audio"));
+using var remote = new RemoteSessionManager(pairing, args.Contains("--allow-viewing"), args.Contains("--allow-input"), args.Contains("--allow-audio"), args.Contains("--allow-sound"));
+using var sound = new SoundStreamService(remote, pairing);
 using var audio = new AudioControlService();
 app.Lifetime.ApplicationStopping.Register(() => remote.Manage("remote:stop"));
 var gate = new SemaphoreSlim(1);
@@ -41,7 +42,7 @@ app.Use(async (ctx, next) => {
     var secure = ctx.Request.IsHttps;
     var origin = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
     ctx.Response.Headers["Content-Security-Policy"] = $"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' {(secure ? "wss" : "ws")}://{ctx.Request.Host}; frame-ancestors 'none'";
-    var upgrade = ctx.WebSockets.IsWebSocketRequest && (ctx.Request.Path == "/api/remote/frames" || ctx.Request.Path == "/api/remote/control");
+    var upgrade = ctx.WebSockets.IsWebSocketRequest && (ctx.Request.Path == "/api/remote/frames" || ctx.Request.Path == "/api/remote/control" || ctx.Request.Path == "/api/audio/stream");
     if (ctx.WebSockets.IsWebSocketRequest && (!upgrade || ctx.Request.Headers.Origin != origin)) { ctx.Response.StatusCode = 403; return; }
     if (!upgrade && ctx.Request.Method != "GET" && (ctx.Request.Headers.Origin != origin || ctx.Request.Headers["X-Monitor-Request"] != "1")) { ctx.Response.StatusCode = 403; return; }
     if (ctx.Request.Path.StartsWithSegments("/api") && !ctx.Request.Path.StartsWithSegments("/api/pair") && (!ctx.Request.Cookies.TryGetValue("session", out var token) || !pairing.Valid(token))) { ctx.Response.StatusCode = 401; return; }
@@ -71,6 +72,7 @@ app.MapPost("/api/logout", (HttpContext ctx) => { if (ctx.Request.Cookies.TryGet
 app.MapGet("/api/status", () => Results.Ok(new { online = true, simulated = Environment.GetEnvironmentVariable("MONITOR_DEMO") == "1", capabilities = remote.Capabilities() }));
 RemoteEndpoints.Map(app, remote);
 AudioEndpoints.Map(app, audio, remote);
+SoundStreamService.Map(app, sound);
 app.MapGet("/api/monitors", () => Command("list"));
 app.MapPost("/api/monitors/{id}/brightness", (string id, Brightness input) => int.TryParse(id, out var index) && index >= 0 && input.Value is >= 0 and <= 100 ? Command("brightness", id, input.Value.ToString()) : Task.FromResult<IResult>(Results.BadRequest(new { error = "Brightness must be 0–100 and monitor ID must be valid." })));
 app.MapPost("/api/displays/power", async (Power input) => {

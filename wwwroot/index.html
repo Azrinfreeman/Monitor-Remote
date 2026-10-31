@@ -14,6 +14,7 @@
   <script src="remote.js" defer></script>
   <script src="audio.js" defer></script>
   <script src="apps.js" defer></script>
+  <script src="listen.js" defer></script>
 </head>
 <body>
 <main>
@@ -91,6 +92,7 @@
         <p id="audio-note" role="status" aria-live="polite">Enable audio volume control in the PC app, then refresh devices.</p>
         <button id="audio-refresh" class="secondary">Refresh devices</button>
       </article>
+      <article id="listen"><p class="eyebrow">LISTEN</p><h2>PC sound on this phone</h2><button id="listen-toggle">Listen to PC sound</button><p id="listen-note" class="monitor-note" role="status">Enable Allow PC sound streaming in the PC app first. Everything the PC plays is sent, including notifications.</p></article>
       <div id="audio-pc"></div>
       <article id="audio-all" hidden>
         <p class="eyebrow">ALL PLAYBACK DEVICES</p><h2 id="audio-all-current">Mixed volume</h2>

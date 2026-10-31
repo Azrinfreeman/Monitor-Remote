@@ -24,21 +24,24 @@ sealed class RemoteSessionManager : IDisposable {
     readonly CancellationTokenSource stopping = new();
     readonly Task watch;
     RemoteSession? session;
-    bool allowViewing, allowInput, allowAudio;
+    bool allowViewing, allowInput, allowAudio, allowSound;
+    public event Action? SoundStopRequested;
+    public volatile bool SoundListening;
     int poweringOff;
-    public RemoteSessionManager(PairingState pairing, bool viewing, bool controlling, bool audio) {
-        this.pairing = pairing; allowViewing = viewing; allowInput = viewing && controlling; allowAudio = audio;
+    public RemoteSessionManager(PairingState pairing, bool viewing, bool controlling, bool audio, bool sound = false) {
+        this.pairing = pairing; allowViewing = viewing; allowInput = viewing && controlling; allowAudio = audio; allowSound = sound;
         pairing.Revoked += OnRevoked;
         watch = Watch();
     }
-    public object Capabilities() { lock (sync) return new { remoteDesktop = true, audio = true, allowViewing, allowInput, allowAudio, active = session != null }; }
+    public object Capabilities() { lock (sync) return new { remoteDesktop = true, audio = true, allowViewing, allowInput, allowAudio, allowSound, soundStream = true, active = session != null }; }
     public bool Active { get { lock (sync) return session != null; } }
     public void BeginPowerOff() { lock (sync) { if (session != null) throw new FeatureException(409, "Stop remote viewing before turning displays off."); poweringOff++; } }
     public void EndPowerOff() { lock (sync) poweringOff = Math.Max(0, poweringOff - 1); }
     public bool AudioAllowed(string owner) { lock (sync) return allowAudio && pairing.Valid(owner); }
+    public bool SoundAllowed(string owner) { lock (sync) return allowSound && pairing.Valid(owner); }
     public bool ViewingAllowed { get { lock (sync) return allowViewing; } }
     public ManagementReply Status() {
-        lock (sync) return pairing.Status() with { AllowViewing = allowViewing, AllowInput = allowInput, AllowAudio = allowAudio,
+        lock (sync) return pairing.Status() with { AllowViewing = allowViewing, AllowInput = allowInput, AllowAudio = allowAudio, AllowSound = allowSound, SoundActive = SoundListening,
             RemoteState = session == null ? "Idle" : session.ControlEnabled ? "Remote control active" : "Screen sharing active", DisplayName = session?.Display.Name };
     }
     public ManagementReply Manage(string command) {
@@ -50,7 +53,9 @@ sealed class RemoteSessionManager : IDisposable {
                 case "input:off": allowInput = false; if (session != null) session.ControlEnabled = false; input.ReleaseAll(); break;
                 case "audio:on": allowAudio = true; break;
                 case "audio:off": allowAudio = false; break;
-                case "remote:stop": StopLocked(); break;
+                case "sound:on": allowSound = true; break;
+                case "sound:off": allowSound = false; SoundStopRequested?.Invoke(); break;
+                case "remote:stop": StopLocked(); SoundStopRequested?.Invoke(); break;
                 default: return Status() with { Error = "Unknown command" };
             }
             return Status();

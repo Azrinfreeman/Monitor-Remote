@@ -84,6 +84,24 @@ await using (var fixture = await Fixture.Start(serverPath)) {
     Check(appResult.GetProperty("confirmed").GetBoolean() && appResult.GetProperty("session").GetProperty("volume").GetDouble() == 12, "application volume applied with readback");
     appResult = await (await fixture.Post("/api/audio/sessions/demo-music/mute", new { muted = true, revision = apps.Revision })).Content.ReadFromJsonAsync<JsonElement>();
     Check(appResult.GetProperty("confirmed").GetBoolean() && appResult.GetProperty("session").GetProperty("volume").GetDouble() == 35, "application mute keeps its volume");
+    using (var soundDenied = fixture.Socket()) {
+        var refused = false; try { await soundDenied.ConnectAsync(fixture.SocketUrl("../audio/stream"), CancellationToken.None); } catch (WebSocketException) { refused = true; }
+        Check(refused, "sound stream refused until sound permission is enabled");
+    }
+    await fixture.Management("sound:on");
+    using (var listen = fixture.Socket()) {
+        await listen.ConnectAsync(fixture.SocketUrl("../audio/stream"), CancellationToken.None);
+        var first = await Fixture.ReceiveBytes(listen); var second = await Fixture.ReceiveBytes(listen);
+        var decoder = Concentus.OpusCodecFactory.CreateDecoder(48000, 2); var pcm = new short[960 * 2];
+        var samples = decoder.Decode(second.AsSpan(9), pcm, 960);
+        Check(first[0] == 1 && BitConverter.ToUInt32(first, 1) == 0 && BitConverter.ToUInt32(second, 1) == 1 && BitConverter.ToUInt32(second, 5) == 960, "sound packets carry ordered sequence and timestamps");
+        Check(samples == 960 && pcm.Any(x => Math.Abs(x) > 500), "sound packets decode as Opus audio");
+        using var second_ = fixture.Socket(); var busy = false; try { await second_.ConnectAsync(fixture.SocketUrl("../audio/stream"), CancellationToken.None); } catch (WebSocketException) { busy = true; }
+        Check(busy, "only one sound listener at a time");
+        await fixture.Management("sound:off");
+        var soundEnded = false; try { for (var i = 0; i < 200 && !soundEnded; i++) { var data = await Fixture.ReceiveBytes(listen); if (data.Length > 0 && data[0] == (byte)'{') soundEnded = true; } } catch (Exception e) when (e is WebSocketException or Exception) { soundEnded = true; }
+        Check(soundEnded, "turning sound permission off ends the stream");
+    }
     result = await fixture.Post("/api/audio/outputs/volume", new { value = 33, revision, deviceIds = new[] { "demo-speakers", "demo-headphones", "demo-unsupported" } });
     response = await result.Content.ReadFromJsonAsync<JsonElement>();
     Check(!response.GetProperty("confirmed").GetBoolean() && response.GetProperty("results").GetArrayLength() == 3 && response.GetProperty("results")[0].GetProperty("confirmed").GetBoolean(), "bulk audio partial failure reported per endpoint");
