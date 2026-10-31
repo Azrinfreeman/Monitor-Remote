@@ -60,6 +60,9 @@ form.pairing { background: transparent; padding: 24px 0 0; text-align: center; d
 /* Desktop */
 .remote-stage { margin: 16px 0; display: grid; gap: 14px; }
 .viewer-wrap { position: relative; background: var(--surface); border-radius: var(--r-card); overflow: hidden; display: grid; }
+.live-input { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; pointer-events: none; font-size: 16px; }
+#remote-canvas:focus-visible { outline: none; }
+.remote-stage[data-control=true] #remote-canvas { cursor: crosshair; }
 #remote-canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--canvas); touch-action: none; }
 .viewer-bar { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; }
 .viewer-bar button { min-height: 40px; padding: 6px 12px; font-size: .875rem; flex: 1 1 auto; }

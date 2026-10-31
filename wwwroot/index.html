@@ -92,7 +92,7 @@
       </article>
       <div id="remote-stage" class="remote-stage" hidden>
         <div class="viewer-wrap">
-          <canvas id="remote-canvas" aria-label="Live PC screen"></canvas>
+          <canvas id="remote-canvas" tabindex="0" aria-label="Live PC screen. When control is on, click or tap to use the mouse and type on a keyboard."></canvas>
           <div class="viewer-bar" role="toolbar" aria-label="Viewer controls">
             <button id="remote-control" disabled>Enable control</button>
             <button id="remote-expand" class="secondary">Expand view</button>
@@ -102,14 +102,16 @@
         </div>
         <p id="remote-frame-state" class="monitor-note" role="status">Waiting for a fresh frame…</p>
         <label class="visually-hidden" for="remote-mode">Touch mode</label>
-        <select id="remote-mode" class="visually-hidden"><option value="touchpad">Touchpad</option><option value="direct">Direct touch</option></select>
-        <div id="remote-touchpad" class="touchpad" role="application" aria-label="Touchpad for the PC mouse"><span>Slide to move · Tap to click<br>Two fingers to scroll · Pinch screen to zoom</span></div>
+        <select id="remote-mode" class="visually-hidden"><option value="direct" selected>Touch the screen</option><option value="touchpad">Touchpad</option></select>
+        <div id="remote-touchpad" class="touchpad" hidden role="application" aria-label="Touchpad for the PC mouse"><span>Slide to move · Tap to click<br>Two fingers to scroll · Pinch screen to zoom</span></div>
         <div class="remote-actions">
           <button id="remote-left" class="secondary" data-remote-input disabled>Left click</button><button id="remote-double" class="secondary" data-remote-input disabled>Double click</button>
           <button id="remote-right" class="secondary" data-remote-input disabled>Right click</button><button id="remote-drag" class="secondary" data-remote-input aria-pressed="false" disabled>Drag</button>
+          <button id="remote-type" class="secondary" data-remote-input disabled>Type on PC</button>
         </div>
+        <input id="remote-live" class="live-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" aria-label="Typing goes straight to the PC">
         <div id="remote-scroll" class="scroll-strip" aria-label="Slide to scroll">Slide here to scroll</div>
-        <div id="remote-coach" class="coach" hidden><p id="remote-gesture-help">Hold Drag while moving on the touchpad. In direct touch, enable Drag then touch and move on the screen. Long press for right click.</p><button id="remote-coach-dismiss" class="plain">Got it</button></div>
+        <div id="remote-coach" class="coach" hidden><p id="remote-gesture-help">Tap the screen to click, long press for right click, two fingers to zoom. Tap Type on PC to type with your phone keyboard, or use a connected keyboard and mouse directly on the screen.</p><button id="remote-coach-dismiss" class="plain">Got it</button></div>
         <details id="remote-keyboard">
           <summary><svg class="icon" aria-hidden="true"><use href="#i-keyboard"/></svg>Keyboard</summary>
           <p class="monitor-note">Click the intended text field on your PC first.</p>

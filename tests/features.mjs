@@ -61,6 +61,23 @@ const displaySnapshot={revision:'layout',displays:[{id:'left',name:'Left display
 function frame(){const header=new TextEncoder().encode(JSON.stringify({version:1,sequence:1,revision:'layout',width:1280,height:720,nativeWidth:1920,nativeHeight:1080,x:-1920,y:0,cursorVisible:false}));const bytes=new Uint8Array(4+header.length+2);new DataView(bytes.buffer).setInt32(0,header.length,true);bytes.set(header,4);bytes.set([255,216],4+header.length);return bytes.buffer;}
 async function remoteStart(ui){ui.window.remoteUI.tab(true);ui.calls.at(-1).reply({capabilities:{allowViewing:true,allowInput:true},snapshot:displaySnapshot});await tick();ui.elements['remote-display'].value='left';ui.elements['remote-quality'].value='balanced';ui.elements['remote-mode'].value='touchpad';ui.elements['remote-start'].onclick();ui.calls.at(-1).reply({remoteSessionId:'s1',display:displaySnapshot.displays[0]});await tick();for(const socket of ui.sockets.slice(-2))socket.open();const frames=ui.sockets.at(-2),control=ui.sockets.at(-1);frames.receive(frame());await tick();control.receive({type:'heartbeat',allowInput:true,controlEnabled:true});return {frames,control};}
 {
+  // Hardware mouse and keyboard on the live screen
+  const ui=setup('remote.js'),{control}=await remoteStart(ui),canvas=ui.elements['remote-canvas'];
+  ui.elements['remote-mode'].value='direct';ui.elements['remote-mode'].onchange();await tick();
+  const key=(init)=>{let prevented=false;const ev={key:'',ctrlKey:false,altKey:false,shiftKey:false,metaKey:false,isComposing:false,preventDefault(){prevented=true;},...init};canvas.listeners.keydown(ev);return prevented;};
+  let n=control.sent.length;assert.equal(key({key:'a'}),true);await tick();assert.deepEqual([control.sent.at(-1).type,control.sent.at(-1).text],['text','a'],'typed letter becomes text');
+  key({key:'A',shiftKey:true});await tick();assert.equal(control.sent.at(-1).text,'A','shifted letter keeps its case');
+  key({key:'Enter'});await tick();assert.equal(control.sent.at(-1).type,'key');assert.equal(control.sent.at(-1).key,'Enter');
+  key({key:'c',ctrlKey:true});await tick();assert.deepEqual(control.sent.at(-1).modifiers,['Ctrl']);assert.equal(control.sent.at(-1).key,'C','Ctrl+C is a shortcut');
+  key({key:'F5'});await tick();assert.equal(control.sent.at(-1).key,'F5','function keys are forwarded');
+  n=control.sent.length;assert.equal(key({key:'Shift'}),false);assert.equal(key({key:'v',metaKey:true}),false);assert.equal(control.sent.length,n,'modifier-only and Meta combos send nothing');
+  canvas.listeners.pointerdown({pointerId:7,pointerType:'mouse',button:2,clientX:150,clientY:100});await tick();
+  assert.deepEqual([control.sent.at(-1).type,control.sent.at(-1).button,control.sent.at(-1).down],['button','right',true],'right mouse button presses the right PC button');
+  canvas.listeners.pointerup({pointerId:7,pointerType:'mouse',button:2,clientX:150,clientY:100});await tick();assert.equal(control.sent.at(-1).down,false,'and releases it');
+  let blocked=false;canvas.listeners.wheel({deltaX:0,deltaY:100,preventDefault(){blocked=true;}});ui.fire(34);await tick();assert.equal(blocked,true);assert.equal(control.sent.at(-1).type,'wheel');assert.equal(control.sent.at(-1).dy,-1,'mouse wheel scrolls the PC');
+  console.log('PASS: physical keyboard, mouse buttons and wheel are forwarded to the PC');
+}
+{
   const ui=setup('remote.js'),{control}=await remoteStart(ui),canvas=ui.elements['remote-canvas'];
   ui.elements['remote-mode'].value='direct';ui.elements['remote-mode'].onchange();await tick();
   let count=control.sent.length;canvas.listeners.pointerdown({pointerId:1,clientX:150,clientY:0});canvas.listeners.pointerup({pointerId:1,clientX:150,clientY:0});assert.equal(control.sent.length,count,'letterbox touch does not click');

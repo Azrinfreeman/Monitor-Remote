@@ -82,6 +82,8 @@ Start, Stop and Restart manage the server. New pairing code preserves connected 
 
 ## Desktop and typing
 
+**Using touch, mouse and keyboard.** Control needs two things: **Screen viewing** and **Mouse and keyboard control** switched on in the PC app, then **Enable control** on the phone. After that: tap the screen to click (long press for right click, two fingers to zoom); with a mouse, move, click, drag, right-click and use the wheel; click the screen and type on a physical or Bluetooth keyboard (letters, Enter, Backspace, arrows, Tab, Esc, Delete, F1 to F12, Ctrl and Alt shortcuts); or tap **Type on PC** to type with the phone keyboard straight into whatever is focused on the PC. **Touchpad** mode is still available. Windows may refuse input to apps running as administrator.
+
 Choose Desktop, refresh displays if needed, select a screen and quality, then Start viewing. Laptop displays can be viewed even when brightness is unsupported. Select Enable control to use touch and keyboard input. Stop viewing before switching displays or turning them off.
 
 Touchpad mode: slide to move, tap to click, long press for right click, and use two fingers or the scroll strip to scroll. Hold Drag while moving on the touchpad. Left click, Double click and Right click buttons are available. Direct touch mode maps the viewed screen to the PC pointer; enable Drag, then touch and move. Pinch the screen to zoom, or use zoom/Fit screen controls.

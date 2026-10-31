@@ -19,7 +19,7 @@
     for (const button of document.querySelectorAll('[data-remote-input]')) button.disabled = !ready();
     $('remote-text').disabled = !ready(); $('remote-send-text').disabled = !ready() || sendingText;
     $('remote-drag').setAttribute('aria-pressed', String(drag));
-    if (id) $('remote-frame-state').textContent = !fresh ? 'Screen paused — input is disabled until a fresh frame arrives.' : `${enabled ? 'Control active' : 'Viewing only'} · ${metadata.nativeWidth} × ${metadata.nativeHeight}`;
+    if (id) $('remote-frame-state').textContent = !fresh ? 'Screen paused — input is disabled until a fresh frame arrives.' : `${enabled ? 'Control active · tap or click the screen, or type' : permitted ? 'Viewing only · tap Enable control to use touch, mouse and keyboard' : 'Viewing only · turn on Mouse and keyboard control in the PC app'} · ${metadata.nativeWidth} × ${metadata.nativeHeight}`;
   }
   function clearImage() {
     image?.close?.(); image = null; metadata = null; pendingFrame = null; renderedAt = 0; imageRect = null;
@@ -182,15 +182,27 @@
     element.addEventListener('pointerdown', event => {
       if (!id) return;
       element.setPointerCapture(event.pointerId);
-      const entry = { x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, moved: false, direct: element === canvas && $('remote-mode').value === 'direct', dragging: false, timer: null };
+      if (element === canvas) canvas.focus?.({ preventScroll: true });
+      const entry = { button: event.button, mouse: false, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, moved: false, direct: element === canvas && $('remote-mode').value === 'direct', dragging: false, timer: null };
       pointers.set(event.pointerId, entry);
       if (pointers.size >= 2) { for (const pointer of pointers.values()) { pointer.moved = true; clearTimeout(pointer.timer); } pinch = { ...middle(), zoom }; return; }
       if (!ready()) return;
+      if (entry.direct && event.pointerType === 'mouse') {
+        // A real mouse presses and releases the PC button exactly as you do, so dragging and double-clicking work.
+        const target = point(event); if (!target || event.button > 2 || event.button === 1) { entry.moved = true; return; }
+        entry.mouse = true; entry.moved = true; perform({ type: 'move', ...target });
+        perform({ type: 'button', button: event.button === 2 ? 'right' : 'left', down: true }); return;
+      }
       if (entry.direct) { const target = point(event); if (!target) { entry.moved = true; return; } perform({ type: 'move', ...target }); if (drag) { entry.dragging = true; entry.moved = true; perform({ type: 'button', button: 'left', down: true }); } }
       if (!entry.dragging) entry.timer = setTimeout(() => { if (!entry.moved && pointers.size === 1 && ready()) { entry.moved = true; click('right'); } }, 500);
     });
     element.addEventListener('pointermove', event => {
-      const entry = pointers.get(event.pointerId); if (!entry) return;
+      const entry = pointers.get(event.pointerId);
+      if (!entry) {
+        // Hovering with a real mouse moves the PC pointer without pressing anything.
+        if (element === canvas && event.pointerType === 'mouse' && !event.buttons && ready() && $('remote-mode').value === 'direct') { const hover = point(event); if (hover) move({ type: 'move', ...hover }); }
+        return;
+      }
       const dx = event.clientX - entry.x, dy = event.clientY - entry.y; entry.x = event.clientX; entry.y = event.clientY;
       if (Math.hypot(entry.x - entry.startX, entry.y - entry.startY) > 6) { entry.moved = true; clearTimeout(entry.timer); }
       if (pointers.size >= 2 && pinch) {
@@ -206,6 +218,7 @@
     function up(event, cancelled = false) {
       const entry = pointers.get(event.pointerId); if (!entry) return;
       clearTimeout(entry.timer); pointers.delete(event.pointerId); if (pointers.size < 2) pinch = null;
+      if (entry.mouse) { if (ready()) perform({ type: 'button', button: entry.button === 2 ? 'right' : 'left', down: false }, false); return; }
       if (entry.dragging || cancelled) release();
       else if (!entry.moved && ready()) { if (entry.direct) { const target = point(event); if (target) perform({ type: 'move', ...target }); else return; } click(); }
     }
@@ -213,6 +226,42 @@
     element.addEventListener('contextmenu', event => event.preventDefault());
   }
   gestures(canvas); gestures($('remote-touchpad'));
+  // ---- hardware mouse: hover moves the PC pointer, the wheel scrolls
+  canvas.addEventListener('wheel', event => {
+    if (!ready()) return;
+    event.preventDefault(); move({ type: 'wheel', dx: event.deltaX / 100, dy: -event.deltaY / 100 });
+  }, { passive: false });
+  // ---- hardware keyboard (physical or Bluetooth): click the screen, then type
+  const NAMED_KEYS = new Set(['Enter', 'Backspace', 'Tab', 'Escape', 'Delete', 'Insert', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']);
+  function keyOperation(event) {
+    const modifiers = [];
+    if (event.ctrlKey) modifiers.push('Ctrl');
+    if (event.altKey) modifiers.push('Alt');
+    const named = NAMED_KEYS.has(event.key) || /^F([1-9]|1[0-2])$/.test(event.key);
+    if (named) { if (event.shiftKey) modifiers.push('Shift'); return { type: 'key', key: event.key, modifiers }; }
+    if (event.key.length !== 1 && !/^[\ud800-\udbff][\udc00-\udfff]$/.test(event.key)) return null;
+    const alphanumeric = /^[a-z0-9]$/i.test(event.key);
+    // AltGr produces Ctrl+Alt on some layouts; those are typed characters, not shortcuts.
+    if (modifiers.length && !(modifiers.length === 2 && !alphanumeric)) { if (!alphanumeric) return null; if (event.shiftKey) modifiers.push('Shift'); return { type: 'key', key: event.key.toUpperCase(), modifiers }; }
+    return { type: 'text', text: event.key };
+  }
+  function forwardKey(event) {
+    if (!ready() || event.isComposing || event.metaKey) return false;
+    const operation = keyOperation(event); if (!operation) return false;
+    event.preventDefault(); perform(operation); return true;
+  }
+  canvas.addEventListener('keydown', forwardKey);
+  // ---- typing with the phone keyboard straight into the PC
+  const live = $('remote-live');
+  if ($('remote-type')) $('remote-type').onclick = () => { if (ready()) live?.focus?.(); };
+  live?.addEventListener('keydown', event => { const operation = keyOperation(event); if (operation && operation.type === 'key') forwardKey(event); });
+  live?.addEventListener('beforeinput', event => {
+    if (!ready()) { event.preventDefault(); return; }
+    if (event.inputType === 'insertText' && event.data) { event.preventDefault(); perform({ type: 'text', text: event.data }); }
+    else if (event.inputType === 'insertLineBreak' || event.inputType === 'insertParagraph') { event.preventDefault(); perform({ type: 'key', key: 'Enter', modifiers: [] }); }
+    else if (event.inputType === 'deleteContentBackward') { event.preventDefault(); perform({ type: 'key', key: 'Backspace', modifiers: [] }); }
+  });
+  live?.addEventListener('compositionend', event => { if (event.data && ready()) perform({ type: 'text', text: event.data }); live.value = ''; });
 
   $('remote-scroll').onpointerdown = event => { if (!ready()) return; $('remote-scroll').setPointerCapture(event.pointerId); scrollPoint = { x: event.clientX, y: event.clientY }; };
   $('remote-scroll').onpointermove = event => { if (!scrollPoint || !ready()) return; move({ type: 'wheel', dx: (event.clientX - scrollPoint.x) / 45, dy: -(event.clientY - scrollPoint.y) / 45 }); scrollPoint = { x: event.clientX, y: event.clientY }; };
@@ -245,5 +294,6 @@
   window.addEventListener('pagehide', () => stop('Viewing stopped.', false));
   window.addEventListener('resize', paint); window.visualViewport?.addEventListener('resize', paint);
   window.addEventListener('blur', release);
+  $('remote-touchpad').hidden = $('remote-mode').value === 'direct';
   update();
 })();

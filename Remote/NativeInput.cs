@@ -9,7 +9,8 @@ sealed class NativeInput {
     static readonly Dictionary<string, ushort> Keys = new(StringComparer.Ordinal) {
         ["Backspace"] = 8, ["Tab"] = 9, ["Enter"] = 13, ["Escape"] = 27, ["Space"] = 32,
         ["PageUp"] = 33, ["PageDown"] = 34, ["End"] = 35, ["Home"] = 36, ["ArrowLeft"] = 37,
-        ["ArrowUp"] = 38, ["ArrowRight"] = 39, ["ArrowDown"] = 40, ["Delete"] = 46,
+        ["ArrowUp"] = 38, ["ArrowRight"] = 39, ["ArrowDown"] = 40, ["Delete"] = 46, ["Insert"] = 45,
+        ["F1"] = 112, ["F2"] = 113, ["F3"] = 114, ["F4"] = 115, ["F5"] = 116, ["F6"] = 117, ["F7"] = 118, ["F8"] = 119, ["F9"] = 120, ["F10"] = 121, ["F11"] = 122, ["F12"] = 123,
         ["Ctrl"] = 17, ["Shift"] = 16, ["Alt"] = 18
     };
     public static (int X, int Y) Map(DesktopDisplay d, double x, double y) {
