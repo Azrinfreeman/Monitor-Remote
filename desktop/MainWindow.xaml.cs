@@ -16,6 +16,8 @@ using Windows.Storage.Streams;
 
 namespace MonitorRemoteDesktop;
 
+public sealed record SessionRow(string Id, string Title, string Detail);
+
 public sealed partial class MainWindow : Window {
     sealed record AddressChoice(string Address, string Name) { public override string ToString() => Name + " — " + Address; }
     static readonly Windows.UI.Color Green = Windows.UI.Color.FromArgb(255, 48, 209, 88), Orange = Windows.UI.Color.FromArgb(255, 255, 159, 10),
@@ -27,7 +29,7 @@ public sealed partial class MainWindow : Window {
     bool busy, exiting, ready, applyingPermissions, remoteActive, approving, soundActive, shown;
     int activePort;
     DateTimeOffset? expires;
-    string pairingCode = "", shownQr = "";
+    string pairingCode = "", shownQr = "", shownSessions = "";
 
     public MainWindow() {
         InitializeComponent();
@@ -59,6 +61,20 @@ public sealed partial class MainWindow : Window {
 
         PortBox.Value = prefs.Port;
         AutoStartToggle.IsOn = prefs.AutoStart;
+        CertPathBox.Text = prefs.TlsCertificatePath ?? ""; CertPasswordBox.Password = prefs.TlsCertificatePassword ?? "";
+        HostsBox.Text = prefs.AllowedHosts ?? ""; TlsPortBox.Value = prefs.TlsPort; PlainHttpToggle.IsOn = prefs.AllowPlainHttp;
+        CertPathBox.LostFocus += (_, _) => { prefs.TlsCertificatePath = CertPathBox.Text.Trim(); Save(); UpdateUrl(); };
+        CertPasswordBox.LostFocus += (_, _) => { prefs.TlsCertificatePassword = CertPasswordBox.Password; Save(); };
+        HostsBox.LostFocus += (_, _) => { prefs.AllowedHosts = HostsBox.Text.Trim(); Save(); UpdateUrl(); };
+        TlsPortBox.ValueChanged += (_, args) => { if (!double.IsNaN(args.NewValue)) { prefs.TlsPort = (int)args.NewValue; Save(); UpdateUrl(); } };
+        PlainHttpToggle.Toggled += (_, _) => { prefs.AllowPlainHttp = PlainHttpToggle.IsOn; Save(); };
+        BrowseCertButton.Click += async (_, _) => {
+            var picker = new Windows.Storage.Pickers.FileOpenPicker();
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
+            picker.FileTypeFilter.Add(".pfx"); picker.FileTypeFilter.Add(".p12");
+            var file = await picker.PickSingleFileAsync();
+            if (file != null) { CertPathBox.Text = file.Path; prefs.TlsCertificatePath = file.Path; Save(); UpdateUrl(); }
+        };
         SignInToggle.IsOn = Preferences.StartsAtSignIn();
 
         StartButton.Click += async (_, _) => await Execute(Start);
@@ -139,6 +155,7 @@ public sealed partial class MainWindow : Window {
         finally { busy = false; UpdateControls(); }
     }
     async Task Start() {
+        if (!string.IsNullOrWhiteSpace(prefs.TlsCertificatePath) && !File.Exists(prefs.TlsCertificatePath)) throw new FileNotFoundException("The HTTPS certificate file was not found. Check Advanced settings.");
         SetStatus("Starting…", Orange);
         if (!server.Running) activePort = prefs.Port;
         Apply(await server.Start(activePort, prefs));
@@ -170,7 +187,7 @@ public sealed partial class MainWindow : Window {
         SessionText.Text = session; RemoteStatus.Text = session == "Idle" ? "Remote viewing idle" : session;
         var trayText = "Monitor Remote · " + (reply.RemoteState ?? "Idle") + (soundActive ? " · sound" : "");
         tray.SetTip(trayText);
-        UpdateUrl();
+        UpdateUrl(); UpdateSessions(reply.Sessions ?? []);
         if (reply.Pending is { Length: > 0 } && !approving) { approving = true; _ = Approve(reply.Pending[0]); }
     }
     async Task Approve(PendingPairing request) {
@@ -194,9 +211,24 @@ public sealed partial class MainWindow : Window {
         finally { approving = false; }
     }
     void Clear() {
-        ready = false; expires = null; pairingCode = ""; shownQr = ""; CodeText.Text = "—"; ExpiryText.Text = ""; UrlBox.Text = ""; QrImage.Opacity = 0; QrImage.Source = null;
+        ready = false; expires = null; pairingCode = ""; shownQr = ""; shownSessions = ""; SessionsList.ItemsSource = null; NoSessionsText.Visibility = Visibility.Visible; CodeText.Text = "—"; ExpiryText.Text = ""; UrlBox.Text = ""; QrImage.Opacity = 0; QrImage.Source = null;
         applyingPermissions = true; ViewingToggle.IsOn = InputToggle.IsOn = AudioToggle.IsOn = SoundToggle.IsOn = false; applyingPermissions = false;
         remoteActive = false; soundActive = false; SessionText.Text = "Idle"; RemoteStatus.Text = "Remote viewing idle"; tray.SetTip("Monitor Remote");
+    }
+    static string Device(string agent) =>
+        agent.Contains("iPhone") ? "iPhone" : agent.Contains("iPad") ? "iPad" : agent.Contains("Android") ? "Android phone" : agent.Contains("Windows") ? "Windows browser" : agent.Contains("Macintosh") ? "Mac browser" : "Browser";
+    void UpdateSessions(SessionView[] sessions) {
+        var key = string.Join(",", sessions.Select(s => s.Id));
+        NoSessionsText.Visibility = sessions.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (key == shownSessions) return;
+        shownSessions = key;
+        SessionsList.ItemsSource = sessions.OrderByDescending(s => s.Started).Select(s => new SessionRow(s.Id,
+            (s.Remote ? "Away from home · " : "Home network · ") + s.Address,
+            Device(s.Label) + " · paired " + s.Started.ToLocalTime().ToString("HH:mm") + " · until " + s.Expires.ToLocalTime().ToString("HH:mm"))).ToList();
+    }
+    async void RevokeSession_Click(object sender, RoutedEventArgs e) {
+        if (sender is not Button { Tag: string id }) return;
+        await Execute(async () => { Apply(await server.Send("session:revoke:" + id)); Log("Revoked one phone session."); });
     }
     void UpdateControls() {
         var idle = !busy && !exiting;

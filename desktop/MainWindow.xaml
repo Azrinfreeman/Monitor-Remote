@@ -3,6 +3,7 @@
     x:Class="MonitorRemoteDesktop.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MonitorRemoteDesktop"
     Title="Monitor Remote">
     <Window.SystemBackdrop>
         <MicaBackdrop />
@@ -103,6 +104,29 @@
                                 <Button x:Name="RemoteStopButton" Content="Stop remote session" />
                             </StackPanel>
                         </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Paired phones" Style="{StaticResource SectionTitle}" />
+                                <TextBlock x:Name="NoSessionsText" Text="No phones are paired." Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <ItemsControl x:Name="SessionsList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="local:SessionRow">
+                                            <Grid ColumnSpacing="12" Padding="0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="{x:Bind Title}" TextWrapping="Wrap" />
+                                                    <TextBlock Text="{x:Bind Detail}" FontSize="12" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Content="Revoke" Tag="{x:Bind Id}" Click="RevokeSession_Click" VerticalAlignment="Center" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Grid>
 
@@ -112,6 +136,21 @@
                         <NumberBox x:Name="PortBox" Header="Port (applies on next start)" Minimum="1" Maximum="65535" SpinButtonPlacementMode="Compact" Width="200" HorizontalAlignment="Left" />
                         <ToggleSwitch x:Name="AutoStartToggle" Header="Start the server when this app opens" OnContent="On" OffContent="Off" />
                         <ToggleSwitch x:Name="SignInToggle" Header="Open this app at Windows sign-in" OnContent="On" OffContent="Off" />
+                        <TextBlock Text="Encrypted connection (HTTPS)" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="CertPathBox" Header="Certificate file (.pfx)" PlaceholderText="Leave empty to use plain HTTP only" />
+                            <Button x:Name="BrowseCertButton" Grid.Column="1" Content="Browse" VerticalAlignment="Bottom" />
+                        </Grid>
+                        <PasswordBox x:Name="CertPasswordBox" Header="Certificate password" />
+                        <TextBox x:Name="HostsBox" Header="Allowed hostnames (comma separated)" PlaceholderText="pc-name.tailnet.ts.net" />
+                        <NumberBox x:Name="TlsPortBox" Header="HTTPS port" Minimum="1" Maximum="65535" SpinButtonPlacementMode="Compact" Width="200" HorizontalAlignment="Left" />
+                        <ToggleSwitch x:Name="PlainHttpToggle" Header="Also allow plain HTTP on the home network" OnContent="On" OffContent="Off" />
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Text="Applies on the next start. The QR code switches to the first allowed hostname over HTTPS. The password is stored encrypted for your Windows account." />
                         <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    Text="Use trusted home Wi-Fi, or HTTPS over a private network such as Tailscale. Allow Private networks in Windows Firewall. Guest Wi-Fi, VPNs and a sleeping PC can block connections." />
                         <TextBox x:Name="DiagnosticsBox" Header="Diagnostics" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" Height="120" FontFamily="Consolas" ScrollViewer.VerticalScrollBarVisibility="Auto" />

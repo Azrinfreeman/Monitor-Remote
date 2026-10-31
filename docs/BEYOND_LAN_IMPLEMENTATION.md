@@ -230,9 +230,9 @@ I have not verified how well the approaches below work on current Windows 11 bui
 | Phase | State | Differences from the plan |
 |-------|-------|---------------------------|
 | 1 TLS | Done | Configured by environment variables and `desktop.json`; no launcher settings screen. HSTS omitted because plain HTTP stays available. |
-| 2 Remote access | Done, partly | PC approval, 2-hour remote sessions, 5-attempt lockout, session list and revoke-by-id (management commands), audit log. Not done: launcher screen listing sessions with per-session Revoke (only the approval prompt exists), adaptive JPEG quality, ForwardedHeaders handling (no proxy is supported). Pairing code length unchanged (6 digits) because approval gates remote clients. |
+| 2 Remote access | Done | PC approval, 2-hour remote sessions, 5-attempt lockout, session list with per-session Revoke in the launcher, audit log, adaptive screen quality (steps down after three slow frames, recovers after 60 healthy ones, never above the chosen level). Not done: ForwardedHeaders handling (no proxy is supported). Pairing code length unchanged (6 digits) because approval gates remote clients. |
 | 3 Per-app mixing | Done | Read-only discovery verified on the real PC; real volume writes not yet exercised. |
-| 4 Sound streaming | Done, partly | Loopback + Opus + WebCodecs; real capture verified from a script (100 packets); not yet heard on an iPhone. Not done: "mute PC speakers while listening", WASM fallback (iOS 26 only, per decision 4). |
+| 4 Sound streaming | Done | Loopback + Opus + WebCodecs; real capture verified from a script; not yet heard on an iPhone. Optional "mute PC speakers while listening" restores on stop and on next start. On this PC the default output is a Voicemeeter virtual device, so muting it did not silence the physical speakers, and the loopback capture stayed live while muted. No WASM fallback (iOS 26 only, per decision 4). |
 | 5a Lock state | Done | `locked` capability and a Desktop-tab message. |
 | 5b Spike | Not run | Protocol in `docs/UNLOCK_SPIKE.md`; needs a throwaway machine. |
 | 5c Unlock helper | Not started | Blocked on the spike. |
