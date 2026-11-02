@@ -35,8 +35,7 @@ body[data-paired=false] #more { display: none; }
 
 /* Pairing */
 form.pairing { background: transparent; padding: 24px 0 0; text-align: center; display: grid; gap: 16px; justify-items: center; }
-.pairing .app-mark { width: 84px; height: 84px; border-radius: 22px; background: var(--accent-fill); color: var(--on-accent); display: grid; place-items: center; }
-.pairing .app-mark .icon { width: 44px; height: 44px; }
+.pairing .app-mark { width: 84px; height: 84px; border-radius: 20px; display: block; }
 .pairing h2 { font-size: 1.375rem; font-weight: 700; letter-spacing: -.02em; }
 .pairing label { color: var(--label-2); font-size: .9375rem; max-width: 300px; }
 .code-field { position: relative; width: min(100%, 320px); }

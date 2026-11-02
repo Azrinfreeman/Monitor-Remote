@@ -77,8 +77,11 @@ await using (var fixture = await Fixture.Start(serverPath)) {
     Check(response.GetProperty("confirmed").GetBoolean() && response.GetProperty("results")[0].GetProperty("device").GetProperty("muted").GetBoolean(), "volume write confirmed and mute preserved");
     await fixture.Management("sound:on");
     using (var quiet = fixture.Socket()) {
-        await quiet.ConnectAsync(fixture.SocketUrl("../audio/stream?mutePc=1"), CancellationToken.None);
-        await Fixture.ReceiveBytes(quiet);
+        await quiet.ConnectAsync(fixture.SocketUrl("../audio/stream?mutePc=1&format=pcm16"), CancellationToken.None);
+        var firstPcm = await Fixture.ReceiveBytes(quiet);
+        var nextPcm = await Fixture.ReceiveBytes(quiet);
+        Check(firstPcm.Length == 9 + 960 * 2 * 2 && firstPcm[0] == 2 && BitConverter.ToUInt32(firstPcm, 1) == 0 && BitConverter.ToUInt32(nextPcm, 1) == 1 && BitConverter.ToUInt32(nextPcm, 5) == 960, "PCM fallback carries complete ordered 48 kHz stereo frames");
+        Check(BitConverter.ToInt16(firstPcm, 9 + 24 * 4) > 7000 && BitConverter.ToInt16(firstPcm, 9 + 24 * 4) == BitConverter.ToInt16(firstPcm, 11 + 24 * 4), "PCM fallback carries signed little-endian stereo sound samples");
         var during = await fixture.Http.GetFromJsonAsync<AudioSnapshot>("/api/audio/devices", RemoteProtocol.Json);
         Check(during!.Devices.First(d => d.Id == "demo-speakers").Muted == true, "listening can mute the PC speakers");
         await quiet.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None);
@@ -100,8 +103,9 @@ await using (var fixture = await Fixture.Start(serverPath)) {
     Check(appResult.GetProperty("confirmed").GetBoolean() && appResult.GetProperty("session").GetProperty("volume").GetDouble() == 12, "application volume applied with readback");
     appResult = await (await fixture.Post("/api/audio/sessions/demo-music/mute", new { muted = true, revision = apps.Revision })).Content.ReadFromJsonAsync<JsonElement>();
     Check(appResult.GetProperty("confirmed").GetBoolean() && appResult.GetProperty("session").GetProperty("volume").GetDouble() == 35, "application mute keeps its volume");
-    using (var soundDenied = fixture.Socket()) {
-        var refused = false; try { await soundDenied.ConnectAsync(fixture.SocketUrl("../audio/stream"), CancellationToken.None); } catch (WebSocketException) { refused = true; }
+    foreach (var format in new[] { "", "?format=pcm16" }) {
+        using var soundDenied = fixture.Socket();
+        var refused = false; try { await soundDenied.ConnectAsync(fixture.SocketUrl("../audio/stream" + format), CancellationToken.None); } catch (WebSocketException) { refused = true; }
         Check(refused, "sound stream refused until sound permission is enabled");
     }
     await fixture.Management("sound:on");

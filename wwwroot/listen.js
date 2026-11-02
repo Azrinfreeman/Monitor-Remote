@@ -1,6 +1,6 @@
 (() => {
   const $ = id => document.getElementById(id), base = window.audioUI;
-  const supported = typeof AudioDecoder === 'function' && typeof EncodedAudioChunk === 'function' && (window.AudioContext || window.webkitAudioContext);
+  const supported = !!(window.AudioContext || window.webkitAudioContext);
   const JITTER = 0.1, MAX_AHEAD = 0.5;
   let socket = null, context = null, decoder = null, nextTime = 0, listening = false, analyser = null;
   const samples = new Uint8Array(128);
@@ -30,6 +30,9 @@
       buffer.copyToChannel(data, channel);
     }
     audioData.close();
+    schedule(buffer);
+  }
+  function schedule(buffer) {
     const now = context.currentTime;
     // Re-anchor after an underrun, and drop audio that would put playback too far behind the PC.
     if (nextTime < now + 0.02) nextTime = now + JITTER;
@@ -37,28 +40,62 @@
     const source = context.createBufferSource();
     source.buffer = buffer; source.connect(analyser || context.destination); source.start(nextTime); nextTime += buffer.duration;
   }
-  function start() {
-    if (!supported) { note('This browser cannot decode the sound stream. Update iOS to 26 or later.'); return; }
-    // Creating and resuming the AudioContext inside the tap is what lets iOS play sound.
-    context = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000, latencyHint: 'interactive' });
-    context.resume().catch(() => {});
-    analyser = context.createAnalyser(); analyser.fftSize = 256; analyser.connect(context.destination);
-    decoder = new AudioDecoder({ output: play, error: () => stop('Sound decoding failed. Try listening again.') });
-    decoder.configure({ codec: 'opus', sampleRate: 48000, numberOfChannels: 2 });
-    nextTime = 0; listening = true; button(); note('Connecting…');
-    const url = new URL('/api/audio/stream', location.href); if ($('listen-mute')?.checked) url.searchParams.set('mutePc', '1'); url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    socket = new WebSocket(url); socket.binaryType = 'arraybuffer';
-    let first = true;
-    socket.onmessage = event => {
-      if (typeof event.data === 'string') { try { stop(JSON.parse(event.data).error || 'Sound stream ended.'); } catch { stop('Sound stream ended.'); } return; }
-      const view = new DataView(event.data);
-      if (view.byteLength <= 9 || view.getUint8(0) !== 1) return;
-      if (first) { first = false; note($('listen-mute')?.checked ? 'Listening. PC speakers are muted until you stop.' : 'Listening. PC speakers keep playing too.'); }
-      const timestamp = view.getUint32(5, true) / 48000 * 1e6;
-      try { decoder.decode(new EncodedAudioChunk({ type: 'key', timestamp, data: new Uint8Array(event.data, 9) })); } catch { stop('Sound decoding failed. Try listening again.'); }
-    };
-    socket.onclose = () => { if (listening) stop('Sound stream closed. Enable "Allow PC sound streaming" in the PC app, then try again.'); };
-    socket.onerror = () => { if (listening) stop('Could not start the sound stream. Enable "Allow PC sound streaming" in the PC app.'); };
+  async function start() {
+    if (!supported) { note('This browser cannot play PC sound. Try another browser.'); return; }
+    let started;
+    try {
+      // Creating and resuming the AudioContext inside the tap is what lets iOS play sound.
+      context = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000, latencyHint: 'interactive' });
+      started = context;
+      const resumed = context.resume();
+      analyser = context.createAnalyser(); analyser.fftSize = 256; analyser.connect(context.destination);
+      nextTime = 0; listening = true; button(); note('Connecting…');
+      await resumed;
+      if (context !== started) return;
+      if (context.state !== 'running') throw new Error('Playback was blocked. Tap Listen again to allow sound.');
+      // HTTP gives actionable permission/session errors that a rejected WebSocket handshake hides.
+      const { capabilities } = await window.monitorApp.api('status');
+      if (context !== started) return;
+      if (!capabilities?.allowSound) throw new Error('Enable PC sound streaming in the PC app, then try again.');
+      if ($('listen-mute')?.checked && !capabilities.allowAudio) throw new Error('To mute PC speakers, enable audio volume control in the PC app or turn off "Mute PC speakers while listening".');
+      const config = { codec: 'opus', sampleRate: 48000, numberOfChannels: 2 };
+      let opus = false;
+      if (typeof AudioDecoder === 'function' && typeof EncodedAudioChunk === 'function') {
+        try { opus = (await AudioDecoder.isConfigSupported(config)).supported; } catch { /* use PCM instead */ }
+      }
+      if (context !== started) return;
+      if (opus) {
+        decoder = new AudioDecoder({ output: play, error: () => { if (context === started) stop('Sound decoding failed. Try listening again.'); } });
+        decoder.configure(config);
+      }
+      const url = new URL('/api/audio/stream', location.href); if ($('listen-mute')?.checked) url.searchParams.set('mutePc', '1'); url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      if (!opus) url.searchParams.set('format', 'pcm16');
+      socket = new WebSocket(url); socket.binaryType = 'arraybuffer';
+      let first = true;
+      socket.onmessage = event => {
+        if (typeof event.data === 'string') { try { stop(JSON.parse(event.data).error || 'Sound stream ended.'); } catch { stop('Sound stream ended.'); } return; }
+        const view = new DataView(event.data);
+        if (view.byteLength <= 9 || view.getUint8(0) !== (opus ? 1 : 2)) return;
+        if (first) { first = false; note($('listen-mute')?.checked ? 'Listening. PC speakers are muted until you stop.' : 'Listening. PC speakers keep playing too.'); }
+        const timestamp = view.getUint32(5, true) / 48000 * 1e6;
+        try {
+          if (opus) decoder.decode(new EncodedAudioChunk({ type: 'key', timestamp, data: new Uint8Array(event.data, 9) }));
+          else {
+            if (view.byteLength !== 9 + 960 * 2 * 2) throw new Error('Invalid PCM frame');
+            const buffer = context.createBuffer(2, 960, 48000);
+            for (let channel = 0; channel < 2; channel++) {
+              const data = buffer.getChannelData(channel);
+              for (let i = 0; i < 960; i++) data[i] = view.getInt16(9 + (i * 2 + channel) * 2, true) / 32768;
+            }
+            schedule(buffer);
+          }
+        } catch { stop('Sound playback failed. Try listening again.'); }
+      };
+      socket.onclose = () => { if (listening) stop('Sound stream closed. Enable "Allow PC sound streaming" in the PC app, then try again.'); };
+      socket.onerror = () => { if (listening) stop('Could not connect to PC sound. Check the PC connection and sound permission. If muting PC speakers is selected, also allow audio volume control or turn that option off.'); };
+    } catch (error) {
+      if (!started || context === started) stop(error.message || 'Could not start sound playback. Try listening again.');
+    }
   }
   try { if ($('listen-mute') && localStorage.getItem('listen-mute') === '1') $('listen-mute').checked = true; } catch { /* private mode */ }
   $('listen-mute')?.addEventListener('change', () => { try { localStorage.setItem('listen-mute', $('listen-mute').checked ? '1' : '0'); } catch { /* private mode */ } });
@@ -68,5 +105,5 @@
     tab(active) { base.tab(active); }
   };
   button();
-  if (!supported) note('This browser cannot decode the sound stream. It needs iOS 26 or a current desktop browser.');
+  if (!supported) note('This browser cannot play PC sound. Try another browser.');
 })();

@@ -91,6 +91,7 @@ sealed class SoundStreamService : IDisposable {
         var owner = FeatureApi.Owner(ctx);
         if (!manager.SoundAllowed(owner)) { ctx.Response.StatusCode = 403; return; }
         var mutePc = ctx.Request.Query["mutePc"] == "1";
+        var pcm = ctx.Request.Query["format"] == "pcm16";
         if (mutePc && !manager.AudioAllowed(owner)) { ctx.Response.StatusCode = 403; return; }
         CancellationTokenSource lifetime;
         lock (sync) {
@@ -106,7 +107,7 @@ sealed class SoundStreamService : IDisposable {
                 source = DesktopDisplayCatalog.Demo ? new DemoSoundSource() : OperatingSystem.IsWindows() ? new LoopbackSoundSource() : throw new InvalidOperationException("Sound streaming requires Windows.");
                 source.Start();
                 if (mutePc) mutedDevice = await MutePc();
-                await Pump(socket, source, owner, lifetime.Token);
+                await Pump(socket, source, owner, pcm, lifetime.Token);
                 if (socket.State == WebSocketState.CloseReceived) {
                     using var timeout = new CancellationTokenSource(500);
                     await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "bye", timeout.Token);
@@ -155,11 +156,11 @@ sealed class SoundStreamService : IDisposable {
         try { if (File.Exists(MarkerPath) && File.ReadAllText(MarkerPath).Trim() is { Length: > 0 } id) await Unmute(id); }
         catch (IOException) { }
     }
-    async Task Pump(WebSocket socket, ISoundSource source, string owner, CancellationToken token) {
-        var encoder = OpusCodecFactory.CreateEncoder(SoundFormat.Rate, SoundFormat.Channels, OpusApplication.OPUS_APPLICATION_AUDIO);
-        encoder.Bitrate = 96000;
+    async Task Pump(WebSocket socket, ISoundSource source, string owner, bool rawPcm, CancellationToken token) {
+        var encoder = rawPcm ? null : OpusCodecFactory.CreateEncoder(SoundFormat.Rate, SoundFormat.Channels, OpusApplication.OPUS_APPLICATION_AUDIO);
+        if (encoder != null) encoder.Bitrate = 96000;
         var pcm = new short[SoundFormat.FrameSamples * SoundFormat.Channels];
-        var packet = new byte[SoundFormat.HeaderBytes + SoundFormat.MaxPacket];
+        var packet = new byte[SoundFormat.HeaderBytes + (rawPcm ? pcm.Length * 2 : SoundFormat.MaxPacket)];
         // The client closing its side must end the stream promptly; nothing else is expected from it.
         var closed = Task.Run(async () => {
             var buffer = new byte[256];
@@ -171,8 +172,11 @@ sealed class SoundStreamService : IDisposable {
             if (closed.IsCompleted) return;
             if (!manager.SoundAllowed(owner) || !pairing.Valid(owner)) throw new InvalidOperationException("Sound streaming was turned off or this phone was disconnected.");
             source.ReadFrame(pcm);
-            var length = encoder.Encode(pcm, SoundFormat.FrameSamples, packet.AsSpan(SoundFormat.HeaderBytes), SoundFormat.MaxPacket);
-            packet[0] = 1;
+            var length = pcm.Length * 2;
+            if (encoder != null) length = encoder.Encode(pcm, SoundFormat.FrameSamples, packet.AsSpan(SoundFormat.HeaderBytes), SoundFormat.MaxPacket);
+            else for (var i = 0; i < pcm.Length; i++) BinaryPrimitives.WriteInt16LittleEndian(packet.AsSpan(SoundFormat.HeaderBytes + i * 2), pcm[i]);
+            // Version 2 is uncompressed 48 kHz stereo PCM16 for browsers without WebCodecs (including LAN HTTP).
+            packet[0] = rawPcm ? (byte)2 : (byte)1;
             BinaryPrimitives.WriteUInt32LittleEndian(packet.AsSpan(1), sequence++);
             BinaryPrimitives.WriteUInt32LittleEndian(packet.AsSpan(5), timestamp); timestamp += SoundFormat.FrameSamples;
             using var send = CancellationTokenSource.CreateLinkedTokenSource(token); send.CancelAfter(1000);

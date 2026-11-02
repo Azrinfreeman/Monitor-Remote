@@ -3,3 +3,4 @@ obj/
 publish/
 artifacts/
 App/
+.remotion/
