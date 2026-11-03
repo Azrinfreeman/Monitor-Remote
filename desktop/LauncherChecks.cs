@@ -12,6 +12,11 @@ static class LauncherChecks {
             results.Add("PASS: " + message);
         }
         var previous = Environment.GetEnvironmentVariable("MONITOR_DEMO");
+        var previousPower = Environment.GetEnvironmentVariable("MONITOR_PC_POWER_FILE");
+        var previousMuteMarker = Environment.GetEnvironmentVariable("MONITOR_MUTE_MARKER");
+        var powerRoot = Path.Combine(Path.GetTempPath(), "MonitorRemote-LauncherChecks-" + Guid.NewGuid().ToString("N"));
+        Environment.SetEnvironmentVariable("MONITOR_PC_POWER_FILE", Path.Combine(powerRoot, "pc-power.json"));
+        Environment.SetEnvironmentVariable("MONITOR_MUTE_MARKER", Path.Combine(powerRoot, "mute-marker.txt"));
         Environment.SetEnvironmentVariable("MONITOR_DEMO", "1");
         using var server = new ServerController();
         using var probe = new TcpListener(IPAddress.Loopback, 0);
@@ -34,6 +39,11 @@ static class LauncherChecks {
             var status = await server.Start(port);
             Check(status.Running && status.Code?.Length == 6, "readiness reports authoritative pairing state");
             Check(!status.AllowViewing && !status.AllowInput && !status.AllowAudio, "remote permissions disabled on launch");
+            Check(!status.AllowPcPower && status.PowerTask == null && status.PowerError == null, "PC power disabled with isolated empty storage");
+            Check((await server.Send("pc-power:on")).AllowPcPower && !(await server.Send("pc-power:off")).AllowPcPower, "independent PC power permission switch");
+            bool commandConflict = false;
+            try { await server.Send("pc-power:cancel:missing:1"); } catch (ManagementCommandException) { commandConflict = true; }
+            Check(commandConflict && (await server.Send("status")).Running, "expected power conflict preserves management connection");
             Check((await http.GetAsync("/")).IsSuccessStatusCode, "packaged static assets served");
             using (var pipe = new NamedPipeClientStream(".", server.PipeName, PipeDirection.InOut, PipeOptions.Asynchronous)) {
                 using var timeout = new CancellationTokenSource(3000);
@@ -63,6 +73,13 @@ static class LauncherChecks {
                 catch (IOException) { /* The server may close immediately at the size limit. */ }
             }
             Check((await server.Send("status")).Running, "oversized message leaves management available");
+            await server.Send("pc-power:on");
+            using (var request = new HttpRequestMessage(HttpMethod.Post, "/api/pc-power/tasks") {
+                Content = new StringContent(JsonSerializer.Serialize(new { requestId = Guid.NewGuid().ToString("D"), action = "shutdown", mode = "delay", delaySeconds = 600 }), Encoding.UTF8, "application/json")
+            }) {
+                request.Headers.Add("Origin", http.BaseAddress!.ToString().TrimEnd('/')); request.Headers.Add("X-Monitor-Request", "1");
+                Check((await http.SendAsync(request)).StatusCode == HttpStatusCode.Accepted && (await server.Send("status")).PowerTask?.State == "pending", "packaged power task appears in local management");
+            }
             await server.Stop();
             listener.Start();
             Check(!server.Running, "graceful stop frees port and releases process");
@@ -72,6 +89,13 @@ static class LauncherChecks {
             listener.Stop();
             var restarted = await server.Start(port);
             Check(!restarted.AllowViewing && !restarted.AllowInput && !restarted.AllowAudio, "restart resets local permissions");
+            Check(!restarted.AllowPcPower && restarted.PowerTask?.State == "paused", "restart restores saved power task paused with permission off");
+            var enabled = await server.Send("pc-power:on");
+            Check(enabled.PowerTask?.State == "paused", "enabling power does not resume saved task");
+            var saved = enabled.PowerTask!;
+            var resumed = await server.Send($"pc-power:resume:{saved.Id}:{saved.Revision}");
+            Check(resumed.PowerTask?.State == "pending", "local management explicitly resumes saved task");
+            Check((await server.Send($"pc-power:cancel:{saved.Id}:{resumed.PowerTask!.Revision}")).PowerTask == null, "local management cancels resumed task");
             Check((await http.GetAsync("/api/status")).StatusCode == HttpStatusCode.Unauthorized, "restart revokes old sessions");
             server.Dispose();
             await Task.Delay(500);
@@ -84,6 +108,9 @@ static class LauncherChecks {
         finally {
             await server.Stop();
             Environment.SetEnvironmentVariable("MONITOR_DEMO", previous);
+            Environment.SetEnvironmentVariable("MONITOR_PC_POWER_FILE", previousPower);
+            Environment.SetEnvironmentVariable("MONITOR_MUTE_MARKER", previousMuteMarker);
+            if (Path.GetDirectoryName(powerRoot) == Path.TrimEndingDirectorySeparator(Path.GetTempPath()) && Path.GetFileName(powerRoot).StartsWith("MonitorRemote-LauncherChecks-") && Directory.Exists(powerRoot)) Directory.Delete(powerRoot, true);
             var report = Environment.GetEnvironmentVariable("MONITOR_CHECK_REPORT") ?? Path.Combine(AppContext.BaseDirectory, "launcher-check-results.txt");
             File.WriteAllLines(report, results);
         }

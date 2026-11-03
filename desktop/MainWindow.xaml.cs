@@ -30,6 +30,8 @@ public sealed partial class MainWindow : Window {
     int activePort;
     DateTimeOffset? expires;
     string pairingCode = "", shownQr = "", shownSessions = "";
+    PowerTaskView? powerTask;
+    string? warnedPowerTask;
 
     public MainWindow() {
         InitializeComponent();
@@ -43,7 +45,8 @@ public sealed partial class MainWindow : Window {
         tray = new Tray(WinRT.Interop.WindowNative.GetWindowHandle(this), Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"), "Monitor Remote");
         tray.Activate = RestoreWindow;
         tray.Items = () => [(1, "Show window", true), (0, "", true), (2, "Start server", !busy && !exiting && !server.Running), (3, "Stop server", !busy && !exiting && server.Running),
-            (4, "Stop remote session", ready && remoteActive && !busy && !exiting), (0, "", true), (5, "Open controller", ready), (6, "Exit", true)];
+            (4, "Stop remote session", ready && remoteActive && !busy && !exiting),
+            (7, "Cancel power task", ready && powerTask?.State is "pending" or "paused"), (0, "", true), (5, "Open controller", ready), (6, "Exit", true)];
         tray.Command = id => DispatcherQueue.TryEnqueue(async () => {
             switch (id) {
                 case 1: RestoreWindow(); break;
@@ -52,6 +55,7 @@ public sealed partial class MainWindow : Window {
                 case 4: await Execute(async () => Apply(await server.Send("remote:stop"))); break;
                 case 5: OpenController(); break;
                 case 6: await ExitApp(); break;
+                case 7: await Execute(CancelPower); break;
             }
         });
 
@@ -82,12 +86,18 @@ public sealed partial class MainWindow : Window {
         RestartButton.Click += async (_, _) => await Execute(async () => { await Stop(); await Start(); });
         RenewButton.Click += async (_, _) => await Execute(async () => { Apply(await server.Send("renew")); Log("Pairing code renewed; paired phones remain connected."); });
         RevokeButton.Click += async (_, _) => await Execute(async () => { Apply(await server.Send("revoke")); Log("All phone sessions revoked and pairing code renewed."); });
-        foreach (var (toggle, command) in new[] { (ViewingToggle, "view"), (InputToggle, "input"), (AudioToggle, "audio"), (SoundToggle, "sound") })
+        foreach (var (toggle, command) in new[] { (ViewingToggle, "view"), (InputToggle, "input"), (AudioToggle, "audio"), (SoundToggle, "sound"), (PcPowerToggle, "pc-power") })
             toggle.Toggled += async (_, _) => {
                 if (applyingPermissions) return;
                 await Execute(async () => Apply(await server.Send(command + (toggle.IsOn ? ":on" : ":off"))));
             };
         RemoteStopButton.Click += async (_, _) => await Execute(async () => Apply(await server.Send("remote:stop")));
+        CancelPowerButton.Click += async (_, _) => await Execute(CancelPower);
+        ResumePowerButton.Click += async (_, _) => await Execute(async () => {
+            if (powerTask is not { State: "paused" } task) return;
+            var dialog = new ContentDialog { XamlRoot = ((FrameworkElement)Content).XamlRoot, Title = "Resume saved power task?", Content = $"{task.Action} at {task.DueAtUtc.ToLocalTime():g}. Keep the PC awake and server running.", PrimaryButtonText = "Resume task", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close };
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary) Apply(await server.Send($"pc-power:resume:{task.Id}:{task.Revision}"));
+        });
         CopyButton.Click += (_, _) => Copy(UrlBox.Text);
         CopyLogsButton.Click += (_, _) => Copy(DiagnosticsBox.Text);
         OpenButton.Click += (_, _) => OpenController();
@@ -151,6 +161,11 @@ public sealed partial class MainWindow : Window {
         if (busy || exiting) return;
         busy = true; UpdateControls();
         try { await action(); }
+        catch (ManagementCommandException error) {
+            Log(error.Message);
+            try { Apply(await server.Send("status")); }
+            catch { Clear(); SetStatus("Connection to server lost — restart to recover", Red); }
+        }
         catch (Exception error) { Clear(); SetStatus("Error — retry Start or Restart", Red); Log(error is OperationCanceledException ? "Server request timed out. Check the port and restart." : error.Message); }
         finally { busy = false; UpdateControls(); }
     }
@@ -162,9 +177,13 @@ public sealed partial class MainWindow : Window {
         Log("Server ready on port " + activePort + ".");
     }
     async Task Stop() {
+        if (powerTask?.State is "pending" or "paused") Log("Server stopping. Power task will restore paused on next launch.");
         SetStatus("Stopping…", Orange); Clear();
         await server.Stop();
         SetStatus("Stopped", Gray); Log("Server stopped; phone sessions disconnected.");
+    }
+    async Task CancelPower() {
+        if (powerTask is { } task) Apply(await server.Send($"pc-power:cancel:{task.Id}:{task.Revision}"));
     }
     async Task ExitApp() {
         if (busy || exiting) return;
@@ -179,8 +198,15 @@ public sealed partial class MainWindow : Window {
         CodeText.Text = pairingCode.Length == 6 ? pairingCode[..3] + " " + pairingCode[3..] : "—";
         expires = reply.Expires;
         applyingPermissions = true;
-        ViewingToggle.IsOn = reply.AllowViewing; InputToggle.IsOn = reply.AllowInput; AudioToggle.IsOn = reply.AllowAudio; SoundToggle.IsOn = reply.AllowSound;
+        ViewingToggle.IsOn = reply.AllowViewing; InputToggle.IsOn = reply.AllowInput; AudioToggle.IsOn = reply.AllowAudio; SoundToggle.IsOn = reply.AllowSound; PcPowerToggle.IsOn = reply.AllowPcPower;
         applyingPermissions = false;
+        powerTask = reply.PowerTask;
+        var powerText = reply.PowerError ?? (powerTask == null ? "No power task scheduled." : $"{powerTask.Action} · {powerTask.DueAtUtc.ToLocalTime():g} · {(powerTask.State == "paused" ? "Paused after server restart" : powerTask.State)}");
+        if (PowerTaskText.Text != powerText) PowerTaskText.Text = powerText;
+        ResumePowerButton.Visibility = powerTask?.State == "paused" ? Visibility.Visible : Visibility.Collapsed;
+        if (powerTask is { State: "pending" } warning && warning.DueAtUtc - DateTimeOffset.UtcNow <= TimeSpan.FromSeconds(10) && warnedPowerTask != warning.Id) {
+            warnedPowerTask = warning.Id; tray.Balloon("PC power task due", $"{warning.Action} is due shortly. Open Monitor Remote to cancel.");
+        }
         soundActive = reply.SoundActive;
         remoteActive = reply.RemoteState is "Remote control active" or "Screen sharing active" || soundActive;
         var session = (reply.RemoteState ?? "Idle") + (reply.DisplayName == null ? "" : " · " + reply.DisplayName) + (soundActive ? " · Streaming PC sound" : "");
@@ -212,7 +238,8 @@ public sealed partial class MainWindow : Window {
     }
     void Clear() {
         ready = false; expires = null; pairingCode = ""; shownQr = ""; shownSessions = ""; SessionsList.ItemsSource = null; NoSessionsText.Visibility = Visibility.Visible; CodeText.Text = "—"; ExpiryText.Text = ""; UrlBox.Text = ""; QrImage.Opacity = 0; QrImage.Source = null;
-        applyingPermissions = true; ViewingToggle.IsOn = InputToggle.IsOn = AudioToggle.IsOn = SoundToggle.IsOn = false; applyingPermissions = false;
+        applyingPermissions = true; ViewingToggle.IsOn = InputToggle.IsOn = AudioToggle.IsOn = SoundToggle.IsOn = PcPowerToggle.IsOn = false; applyingPermissions = false;
+        powerTask = null; PowerTaskText.Text = "Power task status unavailable while server is stopped."; ResumePowerButton.Visibility = Visibility.Collapsed;
         remoteActive = false; soundActive = false; SessionText.Text = "Idle"; RemoteStatus.Text = "Remote viewing idle"; tray.SetTip("Monitor Remote");
     }
     static string Device(string agent) =>
@@ -237,7 +264,9 @@ public sealed partial class MainWindow : Window {
         RestartButton.IsEnabled = idle;
         RenewButton.IsEnabled = RevokeButton.IsEnabled = idle && ready;
         CopyButton.IsEnabled = ready && UrlBox.Text.Length > 0; OpenButton.IsEnabled = ready;
-        ViewingToggle.IsEnabled = AudioToggle.IsEnabled = SoundToggle.IsEnabled = ready && idle;
+        ViewingToggle.IsEnabled = AudioToggle.IsEnabled = SoundToggle.IsEnabled = PcPowerToggle.IsEnabled = ready && idle;
+        CancelPowerButton.IsEnabled = ready && idle && powerTask?.State is "pending" or "paused";
+        ResumePowerButton.IsEnabled = ready && idle && PcPowerToggle.IsOn && powerTask?.State == "paused";
         InputToggle.IsEnabled = ready && ViewingToggle.IsOn && idle;
         RemoteStopButton.IsEnabled = ready && remoteActive && idle;
     }

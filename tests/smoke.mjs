@@ -1,6 +1,11 @@
 import {spawn} from 'node:child_process';
 import assert from 'node:assert/strict';
-const server=spawn('dotnet',['bin/Debug/net10.0/MonitorRemote.dll'],{env:{...process.env,MONITOR_PORT:'18765',MONITOR_DEMO:'1'},stdio:['ignore','pipe','pipe']});
+import {mkdtempSync, rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {once} from 'node:events';
+const powerRoot=mkdtempSync(join(tmpdir(),'MonitorRemote-Smoke-'));
+const server=spawn('dotnet',['bin/Debug/net10.0/MonitorRemote.dll'],{env:{...process.env,MONITOR_PORT:'18765',MONITOR_DEMO:'1',MONITOR_PC_POWER_FILE:join(powerRoot,'pc-power.json'),MONITOR_MUTE_MARKER:join(powerRoot,'mute-marker.txt')},stdio:['ignore','pipe','pipe']});
 let logs='';server.stdout.on('data',d=>logs+=d);server.stderr.on('data',d=>logs+=d);
 const base='http://127.0.0.1:18765';
 async function request(path,data,cookie,origin=base){return fetch(base+path,{method:data===undefined?'GET':'POST',headers:{...(data===undefined?{}:{'Content-Type':'application/json','X-Monitor-Request':'1',Origin:origin}),...(cookie?{Cookie:cookie}:{})},body:data===undefined?undefined:JSON.stringify(data)});}
@@ -24,4 +29,4 @@ try{
   assert.equal((await request('/api/logout',{},cookie)).status,200);
   assert.equal((await request('/api/monitors',undefined,cookie)).status,401);
   console.log('PASS: UI, pairing, authorization, origin protection, validation, demo worker and logout');
-}finally{server.kill();}
+}finally{const exited=once(server,'exit');server.kill();await exited;rmSync(powerRoot,{recursive:true,force:true});}

@@ -3,6 +3,8 @@ using System.Runtime.InteropServices;
 sealed class NativeInput {
     readonly List<Input> held = [];
     readonly bool demo = DesktopDisplayCatalog.Demo;
+    readonly Func<int, uint>? insertOverride;
+    internal NativeInput(Func<int, uint>? insertOverride = null) { this.insertOverride = insertOverride; }
     int demoX = 640, demoY = 360;
     public int HeldCount => held.Count;
     public long Operations { get; private set; }
@@ -92,7 +94,7 @@ sealed class NativeInput {
     }
     void Send(Input[] events) {
         if (events.Length == 0) return;
-        var count = demo ? (uint)events.Length : SendInput((uint)events.Length, events, Marshal.SizeOf<Input>());
+        var count = insertOverride != null ? insertOverride(events.Length) : demo ? (uint)events.Length : SendInput((uint)events.Length, events, Marshal.SizeOf<Input>());
         for (var i = 0; i < count; i++) {
             var input = events[i];
             if (input.Type == 0) {

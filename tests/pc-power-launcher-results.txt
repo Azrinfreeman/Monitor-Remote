@@ -1,0 +1,30 @@
+PASS: readiness reports authoritative pairing state
+PASS: remote permissions disabled on launch
+PASS: PC power disabled with isolated empty storage
+PASS: independent PC power permission switch
+PASS: expected power conflict preserves management connection
+PASS: packaged static assets served
+PASS: unauthorized management cannot access pairing code
+PASS: unauthorized command did not rotate code
+PASS: pairing through packaged server
+PASS: local switches enable independent feature permissions
+PASS: packaged synthetic audio endpoints available
+PASS: renewal preserves local permissions
+PASS: renewal rotates code and resets expiry
+PASS: renewal preserves existing sessions
+PASS: old code invalid after renewal
+PASS: revocation rotates code
+PASS: revocation invalidates sessions
+PASS: new code pairs after revocation
+PASS: oversized message leaves management available
+PASS: packaged power task appears in local management
+PASS: graceful stop frees port and releases process
+PASS: occupied port reports failure and cleans up owned process
+PASS: restart resets local permissions
+PASS: restart restores saved power task paused with permission off
+PASS: enabling power does not resume saved task
+PASS: local management explicitly resumes saved task
+PASS: local management cancels resumed task
+PASS: restart revokes old sessions
+PASS: closing job terminates owned server and frees port
+No real capture, mouse/keyboard injection, audio changes or physical monitor commands were issued. GUI, iPhone, sign-in startup and forced launcher crash need manual trials.

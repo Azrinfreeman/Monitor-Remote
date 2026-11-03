@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 
 if (args.FirstOrDefault() == "--worker") { Hardware.Run(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--pc-power-worker") { await WindowsPcPower.RunWorker(args.Skip(1).ToArray()); return; }
 if (args.FirstOrDefault() == "--capture-worker") { await DesktopCaptureWorker.Run(); return; }
 DesktopDisplayCatalog.InitializeDpi();
 var launchGate = Environment.GetEnvironmentVariable("MONITOR_LAUNCH_GATE");
@@ -13,7 +14,7 @@ if (launchGate != null) {
     while (!File.Exists(launchGate) && DateTime.UtcNow < deadline) await Task.Delay(25);
     if (!File.Exists(launchGate)) return;
 }
-var permissionArguments = new[] { "--allow-viewing", "--allow-input", "--allow-audio", "--allow-sound" };
+var permissionArguments = new[] { "--allow-viewing", "--allow-input", "--allow-audio", "--allow-sound", "--allow-pc-power" };
 var builder = WebApplication.CreateBuilder(args.Where(a => !permissionArguments.Contains(a)).ToArray());
 var port = int.TryParse(Environment.GetEnvironmentVariable("MONITOR_PORT"), out var p) ? p : 8765;
 var tls = new TlsSettings(Environment.GetEnvironmentVariable);
@@ -23,12 +24,17 @@ builder.WebHost.ConfigureKestrel(options => {
     if (!tls.Enabled || tls.AllowPlainHttp) options.Listen(IPAddress.Any, port);
     if (tls.Enabled) options.Listen(IPAddress.Any, tls.Port, listen => listen.UseHttps(https => https.ServerCertificateSelector = (_, _) => tls.Certificate()));
 });
-var app = builder.Build();
 var pairing = new PairingState(audit: AuditLog.Write);
 using var remote = new RemoteSessionManager(pairing, args.Contains("--allow-viewing"), args.Contains("--allow-input"), args.Contains("--allow-audio"), args.Contains("--allow-sound"));
 using var audio = new AudioControlService();
 using var sound = new SoundStreamService(remote, pairing, audio);
 _ = sound.RecoverMute();
+using var power = new PcPowerService(pairing, new PcPowerStore(), new WindowsPcPower(), async token => {
+    remote.BeginPcPowerTransition();
+    await sound.StopForPower(token);
+}, remote.EndPcPowerTransition, allowed: args.Contains("--allow-pc-power"));
+builder.Services.AddSingleton<IHostedService>(power);
+var app = builder.Build();
 app.Lifetime.ApplicationStopping.Register(() => remote.Manage("remote:stop"));
 var gate = new SemaphoreSlim(1);
 var pipeName = Environment.GetEnvironmentVariable("MONITOR_MANAGEMENT_PIPE");
@@ -72,7 +78,8 @@ IResult PairedResponse(HttpContext ctx, string token, TimeSpan lifetime) {
     return Results.Ok(new { paired = true });
 }
 app.MapPost("/api/logout", (HttpContext ctx) => { if (ctx.Request.Cookies.TryGetValue("session", out var token)) pairing.Logout(token); ctx.Response.Cookies.Delete("session"); return Results.Ok(); });
-app.MapGet("/api/status", () => Results.Ok(new { online = true, simulated = Environment.GetEnvironmentVariable("MONITOR_DEMO") == "1", capabilities = remote.Capabilities() }));
+app.MapGet("/api/status", () => Results.Ok(new { online = true, simulated = Environment.GetEnvironmentVariable("MONITOR_DEMO") == "1", capabilities = remote.Capabilities(), pcPower = power.Snapshot().Available }));
+PcPowerEndpoints.Map(app, power);
 RemoteEndpoints.Map(app, remote);
 AudioEndpoints.Map(app, audio, remote);
 SoundStreamService.Map(app, sound);
@@ -102,7 +109,7 @@ async Task<IResult> Command(params string[] command) {
     } finally { gate.Release(); }
 }
 await app.StartAsync();
-var management = pipeName != null && !string.IsNullOrEmpty(pipeSecret) ? LocalManagement.Run(app, pairing, remote, pipeName, pipeSecret) : Task.CompletedTask;
+var management = pipeName != null && !string.IsNullOrEmpty(pipeSecret) ? LocalManagement.Run(app, pairing, remote, pipeName, pipeSecret, power) : Task.CompletedTask;
 await app.WaitForShutdownAsync();
 await management;
 record Pair(string Code);

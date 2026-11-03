@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Control PC power from your phone</title>
+<style>
+  :root{color-scheme:light;--ink:#151515;--muted:#54545c;--accent:#8944ab;--rule:#d6d6dc}
+  *{box-sizing:border-box}body{margin:0;color:var(--ink);background:#fff;font:17px/1.55 "Segoe UI",Arial,sans-serif}
+  main{max-width:74ch;margin:48px auto;padding:0 28px 40px}header{color:var(--muted);font-size:.85rem;border-bottom:1px solid var(--rule);padding-bottom:12px}
+  h1{font-size:2rem;line-height:1.18;letter-spacing:-.02em;margin:28px 0 20px}h2{font-size:1.3rem;line-height:1.3;margin:32px 0 10px}p{margin:0 0 14px}
+  li{margin:8px 0}a{color:var(--accent)}code{font-family:Consolas,monospace;font-size:.87em;overflow-wrap:anywhere}pre{white-space:pre-wrap;background:#f3f3f7;padding:16px;border-left:3px solid var(--accent);overflow-wrap:anywhere}
+  footer{border-top:1px solid var(--rule);margin-top:32px;padding-top:12px;color:var(--muted);font-size:.85rem}
+  @page{size:letter;margin:.65in}@media print{body{font-size:10.5pt}main{margin:0;max-width:none;padding:0}h1,h2{break-after:avoid}pre,li{break-inside:avoid}a{color:inherit}}
+</style></head><body><main><header>Monitor Remote / Practical feature tutorial</header><h1 id="control-pc-power-from-your-phone">Control PC power from your phone</h1>
+<p>Choose shutdown, restart or sleep from the phone's PC power tab. Run an action after a short confirmation countdown, after a timer, or at a specific date and time. Monitor Remote stores and executes the task on the PC; your phone can disconnect afterward.</p>
+<h2 id="set-up-and-use-it">Set up and use it</h2>
+<p>Use the current Windows package, keep the PC awake and leave its server running. Pair your phone using the existing QR/code workflow. In the Windows app, turn on <strong>PC shutdown, restart and sleep</strong> under Phone access. This permission starts off after every server restart.</p>
+<ol>
+<li>Open <strong>PC power</strong> on the phone and choose an action.</li>
+<li>Choose <strong>Now</strong>, <strong>After a timer</strong>, or <strong>Date and time</strong>. A timer accepts hours/minutes from one minute to 365 days. Date/time uses the PC time zone shown beside the field, even when the phone is elsewhere.</li>
+<li>Review the confirmation and accept. Now gives you ten seconds to cancel; scheduled actions use their selected deadline without another delay.</li>
+<li>Read the saved task and countdown. Use <strong>Cancel power task</strong> on the phone, PC window or tray before dispatch. One PC-wide task can be pending at a time.</li>
+</ol>
+<p>Sleep/shutdown ends phone access. Wake the PC manually to reconnect; display wake does not wake a sleeping PC. Shutdown/restart requests do not force programs closed, so unsaved work or Windows policy can block them. A requested or disconnected state does not prove the PC completed the action.</p>
+<h2 id="understand-a-saved-task">Understand a saved task</h2>
+<p>Phone logout, expired pairing cookies and network loss retain accepted tasks. Explicitly revoking the submitting phone on the PC, disconnecting all phones, disabling PC power permission or cancelling the task prevents a pending action.</p>
+<p>Closing the PC window to its tray keeps scheduling alive. Stopping the server or exiting the app stops execution. On next launch, a future saved task is paused: enable PC power permission and choose <strong>Resume power task</strong> locally to re-arm it. Enabling permission alone does not resume it. An already overdue saved task is marked missed.</p>
+<p>No Windows scheduled task, wake timer or background service is installed. If the running PC independently sleeps, scheduling waits for resume. A deadline up to 60 seconds late may still run; anything later is missed. Timers follow the PC UTC clock, so clock corrections can shorten or extend them. A date/time schedule resolves to a fixed UTC instant; changing the time zone later only changes its display. Daylight-saving times that are skipped or repeated must be replaced with an unambiguous time.</p>
+<h2 id="locate-the-editable-sources">Locate the editable sources</h2>
+<ul>
+<li><code>Power/PcPowerService.cs</code> owns permission, scheduling, cancellation, revocation ordering and recovery. Its named constants define the ten-second warning, 60-second lateness allowance and duration bounds.</li>
+<li><code>Power/PcPowerProtocol.cs</code> defines requests and task states; <code>Power/PcPowerEndpoints.cs</code> maps authenticated HTTP routes. <code>ManagementProtocol.cs</code> is the compact contract shared with the launcher.</li>
+<li><code>Power/PcPowerStore.cs</code> persists the last tasks at <code>%LocalAppData%\MonitorRemote\pc-power.json</code>. It uses a separate lock and atomic replacement. Never edit this file while a server owns it.</li>
+<li><code>Power/WindowsPcPower.cs</code> runs whitelisted native power calls in an owned worker. <code>Infrastructure/OwnedJob.cs</code> supplies shared child-process ownership. Demo mode exits before native power or privilege changes.</li>
+<li><code>Remote/RemoteSessionManager.cs</code>, <code>Remote/NativeInput.cs</code> and <code>Audio/SoundStream.cs</code> release held input and restore temporary speaker mute before dispatch. Failed or timed-out cleanup prevents the action.</li>
+<li><code>wwwroot/index.html</code>, <code>wwwroot/power.js</code>, <code>wwwroot/shell.css</code> and existing theme tokens own the phone controls. <code>desktop/MainWindow.xaml</code> and its code-behind own the native permission/status controls. Edit these sources, not generated package files.</li>
+<li><code>tests/PowerChecks.cs</code>, <code>tests/power.mjs</code>, <code>tests/power-browser.mjs</code> and <code>desktop/LauncherChecks.cs</code> cover the feature. The implementation contract is in <a href="../PC_POWER_IMPLEMENTATION.md">the plan</a>.</li>
+</ul>
+<h2 id="make-a-representative-change">Make a representative change</h2>
+<p>To allow 15 seconds for immediate cancellation, change <code>WarningSeconds</code> from <code>10</code> to <code>15</code> in <code>Power/PcPowerService.cs</code>. This changes the immediate deadline and the final warning window. Update the corresponding immediate-deadline assertion in <code>tests/PowerChecks.cs</code>, the immediate timing/confirmation text in <code>wwwroot/power.js</code>, and the tray warning comparison in <code>desktop/MainWindow.xaml.cs</code> from ten to 15 seconds. Keep these presentation values consistent with the server policy.</p>
+<p>Rebuild and run the checks below. Expected result: an immediate task remains pending for 15 seconds, can be cancelled before dispatch, and executes once in simulation afterward. Date/time tasks still dispatch at their requested deadline. This customization example describes the source changes; the shipped ten-second policy remains unchanged, and this example was not applied as part of validation.</p>
+<p>For colors and typography, edit the existing semantic tokens in <code>wwwroot/tokens.css</code>; the new form inherits them. Change phone field layout in <code>wwwroot/shell.css</code>, and use WinUI theme resources and native controls in the launcher XAML. No new visual framework is required.</p>
+<h2 id="build-and-verify-safely">Build and verify safely</h2>
+<p>Use Windows, the .NET 10 SDK and Node.js. The WinUI launcher requires an explicit Windows runtime architecture for its self-contained build.</p>
+<pre><code>dotnet build tests/MonitorRemote.Checks.csproj
+dotnet build desktop/MonitorRemote.Desktop.csproj -r win-x64
+dotnet tests/bin/Debug/net10.0/MonitorRemote.Checks.dll
+node tests/power.mjs
+node tests/frontend.mjs
+node tests/features.mjs
+node tests/design-checks.mjs
+node tests/smoke.mjs
+powershell -ExecutionPolicy Bypass -File .\package.ps1</code></pre>
+<p>C# checks run with fake execution/demo mode and isolated task storage. Harmless blocking workers prove stop/crash ownership without calling power APIs. Existing server-launching checks also isolate their stores. Never use personal task storage for test servers.</p>
+<p>For a manual simulated browser session, open a fresh PowerShell and set these variables before starting the console server:</p>
+<pre><code>$env:MONITOR_DEMO = '1'
+$env:MONITOR_PC_POWER_FILE = Join-Path $env:TEMP 'MonitorRemote-demo-pc-power.json'
+$env:MONITOR_MUTE_MARKER = Join-Path $env:TEMP 'MonitorRemote-demo-mute-marker.txt'
+$env:MONITOR_PORT = '19175'
+dotnet run -- --allow-pc-power</code></pre>
+<p>Use a fresh demo-store filename for each independent run; an existing future task intentionally restores paused. With that server running, open another terminal and pass its printed pairing code to the browser check. Replace the placeholder with the actual code; choose a new capture directory.</p>
+<pre><code>node tests/power-browser.mjs 19175 &lt;pairing-code&gt; artifacts/power-browser-review</code></pre>
+<p>This script requires installed Microsoft Edge, refuses to create tasks unless the server reports simulation, and captures portrait, dark/reduced-motion and landscape layouts. It creates/cancels a timer and waits for an immediate simulated restart. It does not establish physical iPhone/Safari support or actual Windows power behavior.</p>
+<h2 id="recover-from-an-error">Recover from an error</h2>
+<p>If acknowledgement is lost, refresh status. The phone retains the request ID for reconciliation and never resends it automatically. If no matching task appears, check the PC before explicitly dismissing the uncertain result. A dispatched task cannot promise cancellation or automatic retry.</p>
+<p>Storage errors disable scheduling. Close competing servers and check file permissions. Preserve corrupt or unsupported-version JSON for diagnosis; restore a valid backup while all servers are stopped, or move the damaged file aside before starting with an empty store. Recovered future tasks still need local resumption.</p>
+<p>If input cleanup fails, return Windows to its normal unlocked desktop. If mute restoration fails, stop listening and restore PC speaker mute locally; the existing mute marker remains for recovery. Sleep support and shutdown privilege depend on Windows policy and hardware. The app never requests elevation or substitutes a different power action.</p>
+<h2 id="validation-and-exports">Validation and exports</h2>
+<p>See <a href="../VALIDATION.md#pc-power-implementation--2026-11-03">the dated validation record</a> for actual results and remaining manual checks. Automated simulation, source/package builds and browser checks cannot verify physical shutdown, restart, sleep/resume, an unsaved application's veto, VoiceOver or the native Windows window's rendering.</p>
+<p>This Markdown is authoritative. Regenerate its readable HTML companion after edits:</p>
+<pre><code>node docs/tutorial/build-tutorial.mjs pc-power</code></pre>
+<p>Open <code>docs/tutorial/pc-power.html</code> in a browser. To make a PDF companion, use Print &gt; Save as PDF; the export includes print margins and page-break rules. Browser-to-PDF printing is a manual workflow and is not automated by the build script.</p><footer>Generated from <a href="pc-power.md">editable Markdown</a>. Edit the source and regenerate this companion.</footer></main></body></html>

@@ -7,6 +7,11 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 
+if (args.FirstOrDefault() == "--power-probe-host") {
+    using var stop = new CancellationTokenSource();
+    var probe = WindowsPcPower.ProbeOwnership(stop.Token, id => { Console.WriteLine(id); Console.Out.Flush(); });
+    await Console.In.ReadLineAsync(); stop.Cancel(); await probe; return;
+}
 if (args.FirstOrDefault() == "--read-audio") {
     Environment.SetEnvironmentVariable("MONITOR_DEMO", null);
     using var audio = new AudioControlService();
@@ -230,16 +235,20 @@ var tlsOff = new TlsSettings(_ => null);
 Check(!tlsOff.Enabled && tlsOff.AllowPlainHttp && tlsOff.HostAllowed("192.168.1.5") && tlsOff.HostAllowed("localhost") && !tlsOff.HostAllowed("8.8.8.8") && !tlsOff.HostAllowed("phone.ts.net"), "TLS off keeps the private-address host rule");
 var tlsHosts = new TlsSettings(k => k == "MONITOR_ALLOWED_HOSTS" ? "Phone.Example.ts.net, bad!host" : null);
 Check(tlsHosts.HostAllowed("phone.example.ts.net") && !tlsHosts.HostAllowed("evil.example") && tlsHosts.AllowedHosts.Length == 1, "Allowed hostnames are explicit and validated");
-Console.WriteLine($"PASS: {checks} checks. No real desktop capture, input injection or audio changes.");
+await PowerChecks.Run(serverPath);
+Console.WriteLine($"PASS: {checks} remote/audio checks plus PC power checks. No real desktop capture, input injection, audio changes or PC power actions.");
 
 sealed class CheckClock : TimeProvider { public DateTimeOffset Now = DateTimeOffset.UtcNow; public override DateTimeOffset GetUtcNow() => Now; }
 sealed class Fixture : IAsyncDisposable {
     readonly Process process;
     readonly string pipe, secret;
+    readonly string powerPath;
     readonly CookieContainer cookies = new();
     public readonly HttpClient Http;
-    Fixture(Process process, string pipe, string secret, int port) {
+    public string MuteMarkerPath => Path.Combine(Path.GetDirectoryName(powerPath)!, "mute-marker.txt");
+    Fixture(Process process, string pipe, string secret, int port, string powerPath) {
         this.process = process; this.pipe = pipe; this.secret = secret;
+        this.powerPath = powerPath;
         Http = new(new HttpClientHandler { CookieContainer = cookies }) { BaseAddress = new($"http://127.0.0.1:{port}"), Timeout = TimeSpan.FromSeconds(5) };
     }
     public static async Task<Fixture> Start(string serverPath) {
@@ -251,9 +260,12 @@ sealed class Fixture : IAsyncDisposable {
         info.ArgumentList.Add("--contentRoot"); info.ArgumentList.Add(Directory.GetCurrentDirectory());
         info.Environment["MONITOR_PORT"] = port.ToString(); info.Environment["MONITOR_DEMO"] = "1"; info.Environment["MONITOR_MANAGEMENT_PIPE"] = pipe; info.Environment["MONITOR_MANAGEMENT_SECRET"] = secret;
         info.Environment.Remove("MONITOR_LAUNCH_GATE");
+        var powerPath = Path.Combine(Path.GetTempPath(), "MonitorRemote-Checks-" + Guid.NewGuid().ToString("N"), "pc-power.json");
+        info.Environment["MONITOR_PC_POWER_FILE"] = powerPath;
+        info.Environment["MONITOR_MUTE_MARKER"] = Path.Combine(Path.GetDirectoryName(powerPath)!, "mute-marker.txt");
         var process = Process.Start(info)!;
         _ = process.StandardOutput.ReadToEndAsync(); _ = process.StandardError.ReadToEndAsync();
-        var fixture = new Fixture(process, pipe, secret, port);
+        var fixture = new Fixture(process, pipe, secret, port, powerPath);
         try {
             for (var i = 0; i < 50; i++) { try { if ((await fixture.Management("status")).Running) return fixture; } catch (Exception e) when (e is TimeoutException or OperationCanceledException or IOException) { } await Task.Delay(100); }
             throw new Exception("Test server failed to start.");
@@ -283,5 +295,7 @@ sealed class Fixture : IAsyncDisposable {
         using var timeout = new CancellationTokenSource(4000);
         try { await process.WaitForExitAsync(timeout.Token); } catch (OperationCanceledException) { if (!process.HasExited) process.Kill(true); await process.WaitForExitAsync(); }
         Http.Dispose(); process.Dispose();
+        var directory = Path.GetDirectoryName(powerPath)!;
+        if (Path.GetDirectoryName(directory) == Path.TrimEndingDirectorySeparator(Path.GetTempPath()) && Path.GetFileName(directory).StartsWith("MonitorRemote-Checks-") && Directory.Exists(directory)) Directory.Delete(directory, true);
     }
 }

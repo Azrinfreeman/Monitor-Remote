@@ -70,7 +70,7 @@
   setInterval(() => { if (!document.hidden) document.querySelectorAll('input[type=range]').forEach(rangeFill); }, 250);
 
   // ---- tab bar: sliding indicator and pane entrance
-  const tabs = ['monitors', 'desktop', 'audio'], revealed = new Set(['monitors']);
+  const tabs = ['monitors', 'desktop', 'audio', 'power'], revealed = new Set(['monitors']);
   function placeIndicator() {
     const active = tabs.map(name => $('tab-' + name)).find(button => button.getAttribute('aria-pressed') === 'true'), indicator = document.querySelector('.tab-indicator');
     if (!active || !indicator || active.offsetWidth === 0) return;

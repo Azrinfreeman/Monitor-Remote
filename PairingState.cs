@@ -14,6 +14,9 @@ sealed class PairingState {
     string code = "";
     DateTimeOffset expires;
     public event Action<string?>? Revoked;
+    // Lock order: PowerGate, then sync. Notifications run outside sync but inside PowerGate.
+    public object PowerGate { get; } = new();
+    public event Action<string?>? PcRevoked;
     public PairingState(TimeProvider? clock = null, Action<string>? audit = null) { this.clock = clock ?? TimeProvider.System; this.audit = audit; Renew(false); }
     // Loopback and private IPv4 count as the home network; everything else (tailnet, mobile data) needs approval on the PC.
     // Local-only policy: the server answers only the PC itself and devices on its private network, unless MONITOR_ALLOW_REMOTE=1 is set.
@@ -29,6 +32,7 @@ sealed class PairingState {
     public ManagementReply Status() { lock (sync) { Expire(); return new(1, true, code, expires, Pending: pending.Where(p => p.Value.Token == null && !p.Value.Denied).Select(p => new PendingPairing(p.Key, p.Value.Address, p.Value.Label, p.Value.Requested)).ToArray(),
         Sessions: sessions.Values.Select(s => new SessionView(s.Id, s.Address, s.Label, s.Remote, s.Started, s.Expiry)).ToArray()); } }
     public ManagementReply Renew(bool revoke) {
+        lock (PowerGate) {
         ManagementReply reply;
         lock (sync) {
             var old = code;
@@ -38,8 +42,9 @@ sealed class PairingState {
             if (revoke) { sessions.Clear(); pending.Clear(); }
             reply = Status();
         }
-        if (revoke) { audit?.Invoke("revoke-all"); Revoked?.Invoke(null); }
+        if (revoke) { audit?.Invoke("revoke-all"); PcRevoked?.Invoke(null); Revoked?.Invoke(null); }
         return reply;
+        }
     }
     bool Throttled(string address, bool remote, DateTimeOffset now) {
         attempts.TryGetValue(address, out var old);
@@ -108,11 +113,14 @@ sealed class PairingState {
         }
     }
     public bool Valid(string token) { lock (sync) return sessions.TryGetValue(token, out var s) && s.Expiry > clock.GetUtcNow(); }
+    public string? SessionId(string token) { lock (sync) return sessions.TryGetValue(token, out var s) && s.Expiry > clock.GetUtcNow() ? s.Id : null; }
     public void Logout(string token) { lock (sync) { sessions.Remove(token); } audit?.Invoke("logout"); Revoked?.Invoke(token); }
     public bool RevokeSession(string id) {
+        lock (PowerGate) {
         string? token;
         lock (sync) { token = sessions.FirstOrDefault(s => s.Value.Id == id).Key; if (token == null) return false; sessions.Remove(token); }
-        audit?.Invoke("revoke-session " + id); Revoked?.Invoke(token);
+        audit?.Invoke("revoke-session " + id); PcRevoked?.Invoke(id); Revoked?.Invoke(token);
         return true;
+        }
     }
 }

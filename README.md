@@ -2,9 +2,9 @@
 
 **A Windows desktop companion that turns iPhone Safari into a local PC controller.**
 
-View a selected Windows display, control the mouse with touch, type from your phone, and adjust playback or microphone endpoint volume. External-monitor brightness and all-display off/wake controls are also available. A Windows Forms launcher manages the server, QR pairing, permissions and tray controls; the phone uses plain HTML, CSS and JavaScript without a native app or cloud service.
+View a selected Windows display, control the mouse with touch, type from your phone, and adjust playback or microphone endpoint volume. External-monitor brightness, display off/wake and PC shutdown/restart/sleep controls are also available. A WinUI 3 launcher manages the server, QR pairing, permissions and tray controls; the phone uses plain HTML, CSS and JavaScript without a native app or cloud service.
 
-**Platform:** Windows · **Backend:** C# / .NET 10 / ASP.NET Core · **Desktop:** Windows Forms · **Phone interface:** HTML, CSS, JavaScript and WebSockets
+**Platform:** Windows · **Backend:** C# / .NET 10 / ASP.NET Core · **Desktop:** WinUI 3 · **Phone interface:** HTML, CSS, JavaScript and WebSockets
 
 This project targets a reachable, trusted home LAN. By default HTTP/WebSocket traffic is unencrypted; turn on HTTPS (see Encryption and remote access) before using it away from home. Windows unlocking from the phone and waking a sleeping PC are not included.
 
@@ -16,6 +16,7 @@ This project targets a reachable, trusted home LAN. By default HTTP/WebSocket tr
 | Mouse and keyboard | Touchpad or direct-touch input, drag/scroll/click controls, on-screen keys and committed Unicode text |
 | Audio | Default playback volume/mute and individual output/input endpoint controls; bulk actions target playback devices |
 | Displays | DDC/CI brightness where supported and off/wake requests for all displays |
+| PC power | Shutdown, restart and sleep now, after a timer, or at a specific PC date/time; cancellation and local permission |
 | Local control | Six-digit QR-assisted pairing, separate viewing/input/audio permissions, session revocation and Stop remote session |
 
 <details>
@@ -57,16 +58,16 @@ Use Windows with the .NET 10 SDK. Node.js with built-in `fetch` support is neede
 
 ```powershell
 dotnet build MonitorRemote.csproj
-dotnet build desktop/MonitorRemote.Desktop.csproj
+dotnet build desktop/MonitorRemote.Desktop.csproj -r win-x64
 ```
 
 Run `dotnet run` for the console server, or build a portable Windows package with the packaging command below. The server prints a phone URL and pairing code. Viewing, input and audio permissions require explicit opt-in; see Network and packaging for the console flags.
 
-Generated `artifacts` and the older local `App` folder are ignored and are not included in a source clone. This repository has no published GitHub release at the time of this documentation update. Recreate a package locally rather than treating workspace artifact paths as downloads.
+Download the Windows x64 installer and SHA-256 checksum from [release v1.1.0](https://github.com/Azrinfreeman/Monitor-Remote/releases/tag/v1.1.0). Generated `artifacts` and the older local `App` folder are ignored and are not included in a source clone.
 
 ## Run the Windows app
 
-To build a Windows x64 installer, install Inno Setup 6 and run `./build-installer.ps1` in PowerShell. It builds a fresh self-contained package, runs the demo launcher checks, and produces `artifacts/MonitorRemote-1.0.0-win-x64-Setup.exe`. Use `-Version 1.0.1` for a subsequent release. The installer supports Windows 10 build 19041 or later, installs for the current user without administrator access, and adds a Start menu shortcut and an optional desktop shortcut. Remove it through Windows Settings > Apps. Uninstall preserves preferences and removes the sign-in startup entry if it points to the installed executable. Exit the app from its tray menu before upgrading or uninstalling. The installer is unsigned.
+To build the v1.1.0 Windows x64 installer, install Inno Setup 6 and run `./build-installer.ps1 -Version 1.1.0` in PowerShell. It builds a fresh self-contained package, runs the demo launcher checks, and produces `artifacts/MonitorRemote-1.1.0-win-x64-Setup.exe`. Set `-Version` for subsequent releases. The installer supports Windows 10 build 19041 or later, installs for the current user without administrator access, and adds a Start menu shortcut and an optional desktop shortcut. Remove it through Windows Settings > Apps. Uninstall preserves preferences and removes the sign-in startup entry if it points to the installed executable. Exit the app from its tray menu before upgrading or uninstalling. The installer is unsigned.
 
 After packaging, open the new folder under `artifacts` and double-click `MonitorRemote.Desktop.exe`. If this README is inside a package, use the executable beside it. Keep the whole folder together, including its DLLs and `server` folder. The self-contained Windows x64 package requires no SDK or terminal. An existing local `App` folder, if present, contains the earlier brightness/power release.
 
@@ -77,6 +78,7 @@ Enable the features you want in the PC app:
 - **Allow screen viewing:** the phone's Desktop tab can list and view a selected display.
 - **Allow mouse and keyboard control:** permits touch and typing after screen viewing is enabled. The phone separately selects Enable control.
 - **Allow audio volume control:** enables Audio, independently of screen sharing.
+- **PC shutdown, restart and sleep:** enables the phone's PC power tab. It starts off after each server restart.
 
 These permissions start disabled after each server start/restart. The PC app shows sharing/control status. Stop remote session in the window or tray ends sharing and releases its held inputs. Removing a permission takes effect during existing connections.
 
@@ -109,6 +111,16 @@ Windows/hardware volume changes refresh while Audio is visible. Refresh after de
 The Audio tab also lists **Applications**: each program with a Windows audio session gets its own volume and mute per playback device. It uses the same **Allow audio volume control** permission. Some protected programs may refuse a change; the card then reports it.
 
 **Listen to PC sound** streams everything the PC plays (including notifications) to the phone as Opus audio over a WebSocket. It needs **Allow PC sound streaming** in the PC app, which is off at every launch, plays on one phone at a time, and ends when the permission is turned off, the phone is revoked or Stop remote session is chosen. The PC speakers keep playing unless you turn on **Mute PC speakers while listening**, which mutes the Windows default output while you listen and restores it when you stop (or when the server next starts, if it was killed mid-stream). With a virtual mixer such as Voicemeeter as the default device, muting that device may not silence your physical speakers. Nothing is recorded or stored. Playback uses Opus when the browser supports WebCodecs. On LAN HTTP connections and browsers without Opus decoding, it falls back to uncompressed stereo audio through Web Audio (about 1.54 Mbps). Expect roughly 100 to 200 ms of delay; it is not suited to lip-sync-critical video.
+
+## PC power and schedules
+
+Enable **PC shutdown, restart and sleep** in the Windows app, then open **PC power** on your phone. Choose Shut down, Restart or Sleep, and select Now, After a timer, or Date and time. Confirm the request to save one PC-wide task. Now starts a cancellable ten-second countdown; timers accept one minute to 365 days. Date/time uses the PC time zone displayed on the form.
+
+The task continues when your phone locks, disconnects or its pairing cookie expires. Cancel it from the phone, PC window or tray before dispatch. Explicit PC-side revocation of its phone, disconnect-all or disabling PC power permission cancels a pending task. Shutdown/restart does not force applications closed; unsaved work and Windows policy can prevent completion. A sent request is not proof of the resulting power state.
+
+Keep the PC awake and server running. Closing the window to its tray keeps scheduling active. Stopping/exiting the server pauses future saved tasks on the next launch; enable permission and choose **Resume power task** locally to re-arm one. Overdue startup tasks are missed. No wake timer or OS scheduled task is installed. If the PC independently sleeps, deadlines up to 60 seconds late can run on resume; later ones are missed. Timers follow the PC clock, so clock changes affect them.
+
+Power tasks live in `%LocalAppData%\MonitorRemote\pc-power.json`. They never automatically replay after an uncertain dispatch. [The PC power tutorial](docs/tutorial/pc-power.md) explains source files, customization, simulation checks and storage recovery. Its [HTML companion](docs/tutorial/pc-power.html) is generated from the Markdown.
 
 ## Existing display controls
 
@@ -163,12 +175,14 @@ dotnet build tests/MonitorRemote.Checks.csproj
 node tests/smoke.mjs
 node tests/frontend.mjs
 node tests/features.mjs
+node tests/power.mjs
+node tests/design-checks.mjs
 dotnet tests/bin/Debug/net10.0/MonitorRemote.Checks.dll
 ```
 
 Automated remote/audio checks use synthetic frames, input and devices. They do not capture the real desktop, inject real mouse/keyboard input or change real audio. `--read-audio` on the checks executable separately enumerates actual Windows audio devices read only. The packaged launcher `--check` uses demo mode; set `MONITOR_CHECK_REPORT` to a report path before running it.
 
-The [validation record](docs/VALIDATION.md) reports 42 synthetic remote/audio checks and 21 packaged launcher checks passing on 3 October 2026, alongside the JavaScript checks and demo browser QA. These are dated project results, not a fresh hardware acceptance claim from this documentation update.
+The [PC power validation record](docs/VALIDATION.md#pc-power-implementation--2026-11-03) reports 94 power checks, 79 remote/audio checks and 29 packaged launcher checks passing on 3 November 2026, alongside JavaScript checks and simulated Edge browser acceptance. Physical Windows power transitions, iPhone Safari and native-window visual acceptance remain unverified.
 
 Test actual iPhone Safari gestures, portrait/landscape, native keyboard resizing, Wi-Fi loss, lock/UAC, display/DPI changes, real typing and speaker/microphone readback on your setup. ARM64, real Safari/native-hardware acceptance and measured latency remain unverified.
 

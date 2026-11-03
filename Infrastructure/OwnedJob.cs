@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
+// Shared by the launcher and console power workers; closing the handle kills owned children.
 sealed class OwnedJob : IDisposable {
     [StructLayout(LayoutKind.Sequential)] struct Basic {
         public long ProcessTime, JobTime;

@@ -1,5 +1,22 @@
 # Validation results — 2026-10-01
 
+## PC power implementation — 2026-11-03
+
+Implemented PC shutdown/restart/sleep with immediate, duration and PC-local date/time modes. New controls reuse the phone theme and native WinUI launcher patterns. All power execution during validation used fake/demo behavior; no real shutdown, restart, sleep, privilege elevation, firewall change or sign-in registration was performed.
+
+- Source/checks builds and fresh Windows x64 self-contained packaging passed with zero compiler warnings/errors. The WinUI build uses `-r win-x64`; an architecture-free self-contained build is unsupported. A temporary QA server initially held a Debug assembly open; it was stopped before the successful final build.
+- C# checks passed: 94 PC power checks plus 79 existing remote/audio checks. Power coverage includes all nine action/mode combinations, exact deadlines, duration bounds, DST gaps/overlaps, PC-zone interpretation, cookie expiry/logout retention, targeted/all revocation, creation/cancellation ordering, clock jumps during cleanup, stale revisions, startup pause/resume, missed tasks, idempotency, storage locking/corruption/write failure and ambiguous dispatch without replay. Report: `tests/pc-power-check-results.txt`.
+- Harmless blocking-worker probes passed for normal stop and forced parent termination. Failed held-input release and blocked audio recovery prevent dispatch and release the transition guard. A read-only temporary mute marker causes only the task to fail; an HTTP integration check confirms continued server availability. Every server fixture isolates its power and mute-marker paths; an inherited stand-in personal task store stays unchanged.
+- `tests/power.mjs`, `tests/frontend.mjs`, `tests/features.mjs`, `tests/smoke.mjs` and 58 `tests/design-checks.mjs` assertions passed. Frontend checks cover structured conflicts, retained error messages, UUID generation on HTTP, lost acknowledgement reconciliation, no automatic replay, cancellation and paused/dispatching controls. Syntax checks passed for the new JavaScript.
+- Packaged launcher checks passed 29 assertions, including default-disabled power permission, ordinary command conflicts preserving management, a pending task appearing over the local pipe, saved-task restoration paused, explicit local resume and cancellation. Report: `tests/pc-power-launcher-results.txt`. This check bypasses the GUI.
+- Edge/CDP visual acceptance passed at 390 × 844 light, 375 × 667 dark with reduced motion, and 844 × 390 landscape. Four tabs fit without horizontal overflow. The real page creates/cancels a date/time sleep task and a shutdown timer, then completes an immediate simulated restart. Native confirmations are checked, countdown live announcements are disabled, and no JavaScript runtime errors remain. A skipped view-transition rejection during resizing was fixed. Final captures/results: `artifacts/pc-power-browser-ready/`.
+- The editable tutorial is `docs/tutorial/pc-power.md`; `node docs/tutorial/build-tutorial.mjs pc-power` produces its HTML companion. The continuous HTML export was visually inspected for typography, wrapping and footer clearance. Browser Print-to-PDF and the documented 15-second customization were not exercised. PDF page layout is not claimed.
+
+Final portable package: `artifacts/MonitorRemote-PCPower-20261103-ready/MonitorRemote.Desktop.exe`. Source web-asset hashes match the package. Its server and launcher DLL hashes match the binaries used for the 29 packaged checks. Existing packages were preserved. No installer or OS scheduler/service was added.
+
+Remaining manual acceptance: physical Windows shutdown/restart/sleep and resume, policy denial, unsaved-app veto, actual capture/input/audio cleanup during transition, iPhone Safari date-picker/gestures/VoiceOver, native launcher/tray visual rendering and high-contrast behavior. WinUI analyzer checks were not configured or run. ARM64 and a PC without installed development runtimes remain unvalidated. Existing historical results below retain their original scope and date.
+
+
 Wake fix validation:
 - Replaced the wake broadcast with `SetThreadExecutionState(ES_DISPLAY_REQUIRED)` to reset the Windows display idle timer. Off still uses the existing broadcast. No continuous keep-awake request is held.
 - `dotnet build`, `node --check wwwroot/app.js`, and `node tests/smoke.mjs`: passed. Smoke checks cover both power actions and their unconfirmed simulated responses.

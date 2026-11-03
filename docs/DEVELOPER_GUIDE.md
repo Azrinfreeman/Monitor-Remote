@@ -3,6 +3,8 @@
 
 Prepared 1 October 2026; updated 3 October 2026 for remote desktop and audio.
 
+Updated 3 November 2026: PC power now supports shutdown/restart/sleep, countdowns and one-time date/time scheduling. Start with [the PC power tutorial](tutorial/pc-power.md) for current source paths, configuration, customization and safe verification. The current desktop launcher is WinUI 3; the original Windows Forms reconstruction steps below are historical. Child-job ownership now lives in `Infrastructure/OwnedJob.cs` and is shared with the launcher.
+
 This guide explains how to recreate and maintain the app as its developer. It presents a reproducible implementation sequence reconstructed from the source and project records, rather than an exact transcript of every historical edit. Code samples marked as excerpts come from the implementation; the source files contain the complete code.
 
 The finished product lets iPhone Safari view a selected Windows display, control the mouse with touch, type using on-screen/native keyboard entry, adjust default/all-output/per-device audio volume and mute, control external monitor brightness, and request displays off or awake over a trusted local network. A portable Windows launcher starts the server, shows the phone URL and QR code, manages pairing, and stays in the tray.

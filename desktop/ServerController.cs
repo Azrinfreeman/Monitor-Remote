@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO.Pipes;
 using System.Security.Cryptography;
 
+sealed class ManagementCommandException(string message) : Exception(message);
 sealed class ServerController : IDisposable {
     Process? process;
     OwnedJob? job;
@@ -72,7 +73,8 @@ sealed class ServerController : IDisposable {
         await client.ConnectAsync(timeout.Token);
         await ManagementProtocol.Write(client, new ManagementRequest(1, secret, command), timeout.Token);
         var reply = await ManagementProtocol.Read<ManagementReply>(client, timeout.Token);
-        if (reply.Version != 1 || reply.Error != null) throw new IOException(reply.Error ?? "Unsupported management response.");
+        if (reply.Version != 1) throw new IOException("Unsupported management response.");
+        if (reply.Error != null) throw new ManagementCommandException(reply.Error);
         return reply;
     }
     public async Task Stop() {

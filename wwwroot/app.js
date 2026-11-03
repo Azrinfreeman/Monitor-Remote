@@ -52,11 +52,12 @@ async function api(path, data) {
     if (requestEpoch !== epoch) throw Error('Session changed. Connect again.');
     if (response.status === 401) {
       const text = path === 'pair' ? 'Code incorrect or expired. Check the PC console; restart the app for a new code.' : 'Enter the pairing code from your PC to connect again.';
-      invalidateSession(text); throw Error(text);
+      invalidateSession(text); const error = Error(text); error.status = 401; throw error;
     }
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
-      throw Error(body.error || (response.status === 429 ? 'Too many attempts. Wait 10 minutes.' : 'Request failed (' + response.status + ').'));
+      const error = Error(body.error || (response.status === 429 ? 'Too many attempts. Wait 10 minutes.' : 'Request failed (' + response.status + ').'));
+      error.status = response.status; error.details = body; throw error;
     }
     const result = await response.json().catch(() => ({}));
     if (requestEpoch !== epoch) throw Error('Session changed. Connect again.');
@@ -203,6 +204,7 @@ $('refresh').onclick = () => { if (!$('refresh').disabled) load(); };
 $('retry-connection').onclick = () => load();
 $('logout').onclick = async () => {
   if ($('logout').disabled) return;
+  if (window.powerUI?.pending && !confirm('A PC power task is still scheduled. Disconnecting leaves it running. Continue?')) return;
   loggingOut = true;
   invalidateSession('Disconnecting…');
   try { await api('logout', {}); setConnection('unpaired', 'Disconnected. Enter your PC pairing code to connect.'); }

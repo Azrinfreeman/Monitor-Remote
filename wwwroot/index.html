@@ -25,6 +25,7 @@
   <script src="audio.js" defer></script>
   <script src="apps.js" defer></script>
   <script src="listen.js" defer></script>
+  <script src="power.js" defer></script>
   <script src="ui.js" defer></script>
 </head>
 <body data-tab="monitors" data-paired="false">
@@ -65,6 +66,7 @@
       <button id="tab-monitors" class="tab" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="#i-display"/></svg>Displays</button>
       <button id="tab-desktop" class="tab" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-desktop"/></svg>Desktop</button>
       <button id="tab-audio" class="tab" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-speaker"/></svg>Audio</button>
+      <button id="tab-power" class="tab" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-power"/></svg>PC power</button>
       <span class="tab-indicator" aria-hidden="true"></span>
     </nav>
 
@@ -151,6 +153,36 @@
       <h2 id="audio-output-heading" hidden>Playback devices</h2><div id="audio-outputs"></div>
       <h2 id="audio-input-heading" hidden>Microphones &amp; inputs</h2><div id="audio-inputs"></div>
       <h2 id="apps-heading" hidden>Applications</h2><p id="apps-note" class="monitor-note" role="status"></p><button id="apps-refresh" class="secondary">Refresh applications</button><div id="apps-list"></div>
+    </section>
+    <section id="pane-power" hidden aria-label="PC power controls">
+      <article>
+        <h2>PC power</h2>
+        <p id="pc-power-note" role="status">Enable PC shutdown, restart and sleep in the PC app.</p>
+        <form id="pc-power-form" class="power-form">
+          <div class="row-fields">
+            <label for="pc-power-action">Action<select id="pc-power-action"><option value="shutdown">Shut down</option><option value="restart">Restart</option><option value="sleep">Sleep</option></select></label>
+            <label for="pc-power-mode">When<select id="pc-power-mode"><option value="now">Now</option><option value="delay">After a timer</option><option value="at">Date and time</option></select></label>
+          </div>
+          <div id="pc-power-delay" class="power-duration" hidden>
+            <label for="pc-power-hours">Hours<input id="pc-power-hours" type="number" min="0" max="8760" step="1" value="0" inputmode="numeric"></label>
+            <label for="pc-power-minutes">Minutes<input id="pc-power-minutes" type="number" min="0" max="59" step="1" value="30" inputmode="numeric"></label>
+          </div>
+          <div id="pc-power-date" hidden><label id="pc-power-zone" for="pc-power-at">Date and time on the PC</label><input id="pc-power-at" type="datetime-local" step="60"></div>
+          <p id="pc-power-timing" class="monitor-note">Starts a 10-second countdown with time to cancel.</p>
+          <button id="pc-power-submit" class="danger" type="submit" disabled>Shut down PC…</button>
+        </form>
+      </article>
+      <article id="pc-power-task" hidden>
+        <h2 id="pc-power-task-title">Scheduled task</h2>
+        <p id="pc-power-due"></p>
+        <output id="pc-power-countdown" aria-label="Time remaining" aria-live="off"></output>
+        <p id="pc-power-task-state" class="monitor-note" role="status"></p>
+        <button id="pc-power-cancel" class="secondary" type="button">Cancel power task</button>
+      </article>
+      <p class="group-foot">Keep the PC awake and Monitor Remote running. Phone access ends when the PC sleeps or shuts down. Unsaved work may block shutdown or restart. Timers follow the PC clock; changing it can move the deadline.</p>
+      <button id="pc-power-refresh" class="plain" type="button">Refresh power status</button>
+      <p id="pc-power-result" class="group-foot" role="status"></p>
+      <button id="pc-power-dismiss" class="plain" type="button" hidden>Dismiss unconfirmed result</button>
     </section>
   </section>
   <p class="footnote">Keep your PC awake and on the same home Wi-Fi. Connections from outside your home network are refused.</p>

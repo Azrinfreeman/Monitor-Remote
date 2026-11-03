@@ -77,6 +77,8 @@ sealed class LoopbackSoundSource : ISoundSource {
 sealed class SoundStreamService : IDisposable {
     readonly object sync = new();
     CancellationTokenSource? current;
+    TaskCompletionSource? cleanup;
+    bool cleanupFailed;
     readonly RemoteSessionManager manager;
     readonly PairingState pairing;
     readonly AudioControlService audio;
@@ -85,6 +87,14 @@ sealed class SoundStreamService : IDisposable {
         manager.SoundStopRequested += Stop;
     }
     public void Stop() { lock (sync) current?.Cancel(); }
+    public async Task StopForPower(CancellationToken token) {
+        Task? completion;
+        lock (sync) { current?.Cancel(); completion = cleanup?.Task; }
+        if (completion != null) await completion.WaitAsync(token);
+        await RecoverMute(token);
+        if (File.Exists(MarkerPath)) throw new InvalidOperationException("PC speaker mute could not be restored. Restore it before retrying PC power.");
+        lock (sync) if (cleanupFailed) throw new InvalidOperationException("Sound stream cleanup failed. Stop listening before retrying PC power.");
+    }
     public static void Map(WebApplication app, SoundStreamService service) => app.Map("/api/audio/stream", service.Handle);
     async Task Handle(HttpContext ctx) {
         if (!ctx.WebSockets.IsWebSocketRequest) { ctx.Response.StatusCode = 400; return; }
@@ -93,11 +103,16 @@ sealed class SoundStreamService : IDisposable {
         var mutePc = ctx.Request.Query["mutePc"] == "1";
         var pcm = ctx.Request.Query["format"] == "pcm16";
         if (mutePc && !manager.AudioAllowed(owner)) { ctx.Response.StatusCode = 403; return; }
-        CancellationTokenSource lifetime;
-        lock (sync) {
-            if (current != null) { ctx.Response.StatusCode = 409; return; }
-            lifetime = current = CancellationTokenSource.CreateLinkedTokenSource(ctx.RequestAborted);
-        }
+        CancellationTokenSource? admitted = null;
+        var permitted = manager.AdmitSound(owner, () => {
+            lock (sync) {
+                if (current != null) return;
+                admitted = current = CancellationTokenSource.CreateLinkedTokenSource(ctx.RequestAborted);
+                cleanup = new(TaskCreationOptions.RunContinuationsAsynchronously); cleanupFailed = false;
+            }
+        });
+        if (!permitted || admitted == null) { ctx.Response.StatusCode = permitted ? 409 : 403; return; }
+        var lifetime = admitted;
         manager.SoundListening = true;
         ISoundSource? source = null;
         string? mutedDevice = null;
@@ -123,11 +138,14 @@ sealed class SoundStreamService : IDisposable {
                 }
             }
         } finally {
-            source?.Dispose();
-            if (mutedDevice != null) await Unmute(mutedDevice);
-            lock (sync) { current = null; }
-            lifetime.Dispose();
-            manager.SoundListening = false;
+            try {
+                source?.Dispose();
+                if (mutedDevice != null) await Unmute(mutedDevice);
+            } catch (Exception e) when (e is InvalidOperationException or System.Runtime.InteropServices.COMException or IOException) { lock (sync) cleanupFailed = true; }
+            finally {
+                lock (sync) { current = null; cleanup?.TrySetResult(); }
+                lifetime.Dispose(); manager.SoundListening = false;
+            }
         }
     }
     // Optional: silence the PC speakers while listening. The previous state is restored when the stream ends, and a marker file
@@ -146,14 +164,16 @@ sealed class SoundStreamService : IDisposable {
             }, CancellationToken.None);
         } catch (Exception e) when (e is FeatureException or InvalidOperationException or System.Runtime.InteropServices.COMException or IOException) { return null; }
     }
-    async Task Unmute(string id) {
+    async Task Unmute(string id, CancellationToken cancellation = default) {
         try {
-            await audio.Run(devices => { devices.Snapshot(); devices.Set(id, null, false); return 0; }, CancellationToken.None);
+            await audio.Run(devices => { devices.Snapshot(); devices.Set(id, null, false); return 0; }, cancellation).WaitAsync(cancellation);
+            cancellation.ThrowIfCancellationRequested();
             File.Delete(MarkerPath);
         } catch (Exception e) when (e is FeatureException or InvalidOperationException or System.Runtime.InteropServices.COMException or IOException) { }
     }
-    public async Task RecoverMute() {
-        try { if (File.Exists(MarkerPath) && File.ReadAllText(MarkerPath).Trim() is { Length: > 0 } id) await Unmute(id); }
+    public async Task RecoverMute(CancellationToken cancellation = default) {
+        cancellation.ThrowIfCancellationRequested();
+        try { if (File.Exists(MarkerPath) && File.ReadAllText(MarkerPath).Trim() is { Length: > 0 } id) await Unmute(id, cancellation); }
         catch (IOException) { }
     }
     async Task Pump(WebSocket socket, ISoundSource source, string owner, bool rawPcm, CancellationToken token) {

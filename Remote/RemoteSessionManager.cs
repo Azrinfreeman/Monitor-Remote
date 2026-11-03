@@ -20,7 +20,7 @@ sealed class RemoteSession {
 sealed class RemoteSessionManager : IDisposable {
     readonly object sync = new();
     readonly PairingState pairing;
-    readonly NativeInput input = new();
+    readonly NativeInput input;
     readonly CancellationTokenSource stopping = new();
     readonly Task watch;
     RemoteSession? session;
@@ -28,7 +28,16 @@ sealed class RemoteSessionManager : IDisposable {
     public event Action? SoundStopRequested;
     public volatile bool SoundListening;
     int poweringOff;
-    public RemoteSessionManager(PairingState pairing, bool viewing, bool controlling, bool audio, bool sound = false) {
+    bool pcPowerTransition;
+    public void BeginPcPowerTransition() {
+        lock (sync) {
+            pcPowerTransition = true; StopLocked(); SoundStopRequested?.Invoke();
+            if (input.HeldCount != 0) throw new InvalidOperationException("Windows could not release remote input. Return to the normal desktop before retrying PC power.");
+        }
+    }
+    public void EndPcPowerTransition() { lock (sync) pcPowerTransition = false; }
+    public RemoteSessionManager(PairingState pairing, bool viewing, bool controlling, bool audio, bool sound = false, NativeInput? input = null) {
+        this.input = input ?? new NativeInput();
         this.pairing = pairing; allowViewing = viewing; allowInput = viewing && controlling; allowAudio = audio; allowSound = sound;
         pairing.Revoked += OnRevoked;
         watch = Watch();
@@ -37,8 +46,11 @@ sealed class RemoteSessionManager : IDisposable {
     public bool Active { get { lock (sync) return session != null; } }
     public void BeginPowerOff() { lock (sync) { if (session != null) throw new FeatureException(409, "Stop remote viewing before turning displays off."); poweringOff++; } }
     public void EndPowerOff() { lock (sync) poweringOff = Math.Max(0, poweringOff - 1); }
-    public bool AudioAllowed(string owner) { lock (sync) return allowAudio && pairing.Valid(owner); }
-    public bool SoundAllowed(string owner) { lock (sync) return allowSound && pairing.Valid(owner); }
+    public bool AudioAllowed(string owner) { lock (sync) return !pcPowerTransition && allowAudio && pairing.Valid(owner); }
+    public bool SoundAllowed(string owner) { lock (sync) return !pcPowerTransition && allowSound && pairing.Valid(owner); }
+    public bool AdmitSound(string owner, Action admission) {
+        lock (sync) { if (pcPowerTransition || !allowSound || !pairing.Valid(owner)) return false; admission(); return true; }
+    }
     public bool ViewingAllowed { get { lock (sync) return allowViewing; } }
     public ManagementReply Status() {
         lock (sync) return pairing.Status() with { AllowViewing = allowViewing, AllowInput = allowInput, AllowAudio = allowAudio, AllowSound = allowSound, SoundActive = SoundListening,
@@ -70,6 +82,7 @@ sealed class RemoteSessionManager : IDisposable {
         lock (sync) {
             if (!pairing.Valid(owner)) throw new FeatureException(401, "Pair with the PC again.");
             if (!allowViewing) throw new FeatureException(403, "Enable Allow screen viewing in the PC app.");
+            if (pcPowerTransition) throw new FeatureException(409, "A PC power transition is in progress.");
             if (poweringOff != 0) throw new FeatureException(503, "A display-off request is in progress. Wake displays before viewing.");
             if (session != null) throw new FeatureException(409, "Another remote session is active. Stop it on the PC or its phone first.");
             if (input.HeldCount != 0) throw new FeatureException(503, "Previous input cleanup is pending. Return to the normal Windows desktop and retry.");

@@ -1,10 +1,24 @@
 # Project state
 
-Saved: 2026-10-05 (Asia/Kuala_Lumpur)
+Saved: 2026-11-03 (Asia/Kuala_Lumpur)
 Project: Monitor Remote
 Repository: https://github.com/Azrinfreeman/Monitor-Remote
 Visibility: current GitHub repository settings are authoritative
 Default branch: main
+
+## Windows installer v1.1.0 — 2026-11-03
+
+Build the self-contained Windows x64 installer with `./build-installer.ps1 -Version 1.1.0` using .NET 10 and Inno Setup 6. The output is `artifacts/MonitorRemote-1.1.0-win-x64-Setup.exe`; generated payloads remain ignored. Distribution uses [GitHub Releases](https://github.com/Azrinfreeman/Monitor-Remote/releases/tag/v1.1.0) with the installer and `SHA256SUMS.txt` attached.
+
+Release validation: the source/checks build and self-contained Release build passed with zero compiler warnings/errors; 94 power, 79 remote/audio and 29 packaged launcher checks passed. Frontend, power UI, 58 design assertions and demo API smoke checks passed. All 19 packaged web assets and the packaged README match source. Inno Setup 6.7.3 compiled the installer successfully. Installer SHA-256: `B94F1CDB7713C92C7DCCBAB55DC9273D302CB917BCD294FE1FD86C445E5BE3C1`.
+
+The installer is unsigned. Install/upgrade/uninstall and clean-PC runtime acceptance were not exercised; physical PC power transitions and iPhone/native-window acceptance remain pending. No application installation, certificate trust change or real power action was performed to build this release.
+
+## PC power implementation — 2026-11-03
+
+PC shutdown, restart and sleep now have immediate, duration and date/time modes. The server owns one persistent task, default-off local permission, cancellation, explicit-revocation handling and paused restoration. The phone adds a fourth tab using existing styles; WinUI and tray controls expose local management. Native calls run only through owned workers; automated checks use fake execution and isolated storage.
+
+See [the tutorial](tutorial/pc-power.md), [implementation notes](PC_POWER_IMPLEMENTATION.notes.md) and [dated validation](VALIDATION.md#pc-power-implementation--2026-11-03). Source builds and simulation checks pass. Physical shutdown/restart/sleep, iPhone Safari/VoiceOver and native-window visual acceptance remain manual; no real PC power action was issued during implementation. The older milestones below retain their historical dates and limitations.
 
 ## Portfolio documentation follow-up — 2026-10-05
 

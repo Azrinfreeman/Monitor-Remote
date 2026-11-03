@@ -95,6 +95,7 @@
                                 <ToggleSwitch x:Name="AudioToggle" Header="Audio volume control" OnContent="Allowed" OffContent="Off" />
                                 <ToggleSwitch x:Name="SoundToggle" Header="PC sound streaming" OnContent="Allowed" OffContent="Off" />
                                 <TextBlock Text="Sound streaming sends everything the PC plays, including notifications." Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" FontSize="12" />
+                                <ToggleSwitch x:Name="PcPowerToggle" Header="PC shutdown, restart and sleep" OnContent="Allowed" OffContent="Off" AutomationProperties.Name="Allow PC shutdown, restart and sleep" AutomationProperties.AutomationId="PcPowerPermission" />
                             </StackPanel>
                         </Border>
                         <Border Style="{StaticResource Card}">
@@ -102,6 +103,17 @@
                                 <TextBlock Text="Remote session" Style="{StaticResource SectionTitle}" />
                                 <TextBlock x:Name="SessionText" Text="Idle" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                                 <Button x:Name="RemoteStopButton" Content="Stop remote session" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="PC power task" Style="{StaticResource SectionTitle}" />
+                                <TextBlock x:Name="PowerTaskText" Text="No power task scheduled." TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                                <TextBlock Text="Keep the PC awake and this server running. Saved tasks pause after a restart." Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" FontSize="12" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button x:Name="CancelPowerButton" Content="Cancel power task" AutomationProperties.AutomationId="CancelPcPowerTask" />
+                                    <Button x:Name="ResumePowerButton" Content="Resume power task" Visibility="Collapsed" AutomationProperties.AutomationId="ResumePcPowerTask" />
+                                </StackPanel>
                             </StackPanel>
                         </Border>
                         <Border Style="{StaticResource Card}">

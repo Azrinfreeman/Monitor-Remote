@@ -132,6 +132,15 @@ body[data-expanded=true] .viewer-bar { position: absolute; left: 8px; right: 8px
 
 .footnote { text-align: center; font-size: .8125rem; margin-top: 24px; }
 
+/* PC power uses the same grouped inputs and status hierarchy as display/audio controls. */
+.power-form { display: grid; gap: 14px; }
+.power-duration { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.power-duration label, #pc-power-date label { font-size: .9375rem; }
+.power-duration input, #pc-power-at { margin-top: 6px; min-width: 0; max-width: 100%; }
+#pc-power-countdown { display: block; font: 600 2rem/1.2 var(--font-rounded); letter-spacing: -.02em; }
+#pc-power-submit { width: 100%; }
+#pc-power-refresh { margin-top: 12px; }
+
 #keyboard-special button, #keyboard-shortcuts button { flex: 1 1 96px; white-space: nowrap; overflow-wrap: normal; }
 @media (max-height: 520px) and (orientation: landscape) {
   .large-title { padding-top: 12px; }
